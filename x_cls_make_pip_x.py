@@ -3,12 +3,9 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+from collections.abc import Callable
+from importlib.metadata import version as _version
 from typing import cast
-
-try:
-    from importlib.metadata import PackageNotFoundError, version  # Python 3.8+
-except ImportError:  # pragma: no cover
-    from importlib_metadata import PackageNotFoundError, version  # type: ignore
 
 
 class x_cls_make_pip_x:
@@ -33,8 +30,9 @@ class x_cls_make_pip_x:
     @staticmethod
     def get_installed_version(dist_name: str) -> str | None:
         try:
-            return cast(str, version(dist_name))
-        except PackageNotFoundError:
+            _ver: Callable[[str], str] = cast(Callable[[str], str], _version)
+            return _ver(dist_name)
+        except Exception:
             return None
 
     def is_outdated(self, dist_name: str) -> bool:

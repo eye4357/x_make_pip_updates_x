@@ -3,24 +3,18 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from collections.abc import Callable
+from importlib.metadata import version as _pkg_version
 from typing import Any, cast
 
-try:
-    # Python 3.8+
-    from importlib.metadata import PackageNotFoundError
-    from importlib.metadata import version as _pkg_version
-except Exception:  # pragma: no cover - fallback for very old Python
-    from importlib_metadata import PackageNotFoundError
-    from importlib_metadata import version as _pkg_version  # type: ignore
+_VERSION: Callable[[str], str] = cast(Callable[[str], str], _pkg_version)
 
 
 def get_installed_version(dist_name: str) -> str | None:
     try:
-        return cast(str, _pkg_version(dist_name))
-    except PackageNotFoundError:
-        return None
+        return _VERSION(dist_name)
     except Exception:
-        # On any unexpected error, treat as not installed for summary purposes
+        # Treat as not installed if metadata cannot be resolved
         return None
 
 
