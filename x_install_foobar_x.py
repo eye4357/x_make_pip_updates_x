@@ -1,17 +1,20 @@
 from __future__ import annotations
+
 import os
-import sys
 import subprocess
-from typing import Optional, List, Dict, Any, cast
+import sys
+from typing import Any, cast
 
 try:
     # Python 3.8+
-    from importlib.metadata import version as _pkg_version, PackageNotFoundError
+    from importlib.metadata import PackageNotFoundError
+    from importlib.metadata import version as _pkg_version
 except Exception:  # pragma: no cover - fallback for very old Python
-    from importlib_metadata import version as _pkg_version, PackageNotFoundError  # type: ignore
+    from importlib_metadata import PackageNotFoundError
+    from importlib_metadata import version as _pkg_version  # type: ignore
 
 
-def get_installed_version(dist_name: str) -> Optional[str]:
+def get_installed_version(dist_name: str) -> str | None:
     try:
         return cast(str, _pkg_version(dist_name))
     except PackageNotFoundError:
@@ -35,7 +38,7 @@ def main(x_lib_x: str, use_user: bool) -> int:
         cmd.append("--user")
 
     print("Running:", " ".join(cmd))
-    proc = subprocess.run(cmd)
+    proc = subprocess.run(cmd, check=False)
     return proc.returncode
 
 
@@ -43,7 +46,7 @@ if __name__ == "__main__":
     # Packages can be provided as CLI args (positional), e.g.:
     #   python install_foobar.py pkg1 pkg2 --user
     # If none provided, default to the two internal packages below.
-    raw_args: List[str] = sys.argv[1:]
+    raw_args: list[str] = sys.argv[1:]
     use_user_flag = "--user" in raw_args
     args = [a for a in raw_args if not a.startswith("-")]
     packages = (
@@ -55,7 +58,7 @@ if __name__ == "__main__":
         ]
     )
 
-    results: List[Dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
     any_fail = False
     for pkg in packages:
         prev = get_installed_version(pkg)

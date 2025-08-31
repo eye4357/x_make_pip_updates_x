@@ -1,8 +1,9 @@
 from __future__ import annotations
+
 import json
-import sys
 import subprocess
-from typing import Optional, Tuple, cast
+import sys
+from typing import cast
 
 try:
     from importlib.metadata import PackageNotFoundError, version  # Python 3.8+
@@ -23,14 +24,14 @@ class x_cls_make_pip_x:
         self.user = user
 
     @staticmethod
-    def _run(cmd: list[str]) -> Tuple[int, str, str]:
+    def _run(cmd: list[str]) -> tuple[int, str, str]:
         cp = subprocess.run(cmd, text=True, capture_output=True, check=False)
         stdout = cp.stdout or ""
         stderr = cp.stderr or ""
         return cp.returncode, stdout, stderr
 
     @staticmethod
-    def get_installed_version(dist_name: str) -> Optional[str]:
+    def get_installed_version(dist_name: str) -> str | None:
         try:
             return cast(str, version(dist_name))
         except PackageNotFoundError:
