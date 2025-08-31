@@ -37,7 +37,15 @@ class x_cls_make_pip_x:
             return None
 
     def is_outdated(self, dist_name: str) -> bool:
-        cmd = [sys.executable, "-m", "pip", "list", "--outdated", "--format=json", "--disable-pip-version-check"]
+        cmd = [
+            sys.executable,
+            "-m",
+            "pip",
+            "list",
+            "--outdated",
+            "--format=json",
+            "--disable-pip-version-check",
+        ]
         code, out, err = self._run(cmd)
         if code != 0:
             print(f"pip list failed ({code}): {err.strip()}")

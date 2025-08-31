@@ -3,11 +3,13 @@ import os
 import sys
 import subprocess
 from typing import Optional, List, Dict, Any, cast
+
 try:
     # Python 3.8+
     from importlib.metadata import version as _pkg_version, PackageNotFoundError
 except Exception:  # pragma: no cover - fallback for very old Python
     from importlib_metadata import version as _pkg_version, PackageNotFoundError  # type: ignore
+
 
 def get_installed_version(dist_name: str) -> Optional[str]:
     try:
@@ -17,6 +19,7 @@ def get_installed_version(dist_name: str) -> Optional[str]:
     except Exception:
         # On any unexpected error, treat as not installed for summary purposes
         return None
+
 
 def main(x_lib_x: str, use_user: bool) -> int:
     here = os.path.dirname(os.path.abspath(__file__))
@@ -35,6 +38,7 @@ def main(x_lib_x: str, use_user: bool) -> int:
     proc = subprocess.run(cmd)
     return proc.returncode
 
+
 if __name__ == "__main__":
     # Packages can be provided as CLI args (positional), e.g.:
     #   python install_foobar.py pkg1 pkg2 --user
@@ -42,10 +46,14 @@ if __name__ == "__main__":
     raw_args: List[str] = sys.argv[1:]
     use_user_flag = "--user" in raw_args
     args = [a for a in raw_args if not a.startswith("-")]
-    packages = args if args else [
-        "x_make_markdown_x",
-        "x_make_pypi_x",
-    ]
+    packages = (
+        args
+        if args
+        else [
+            "x_make_markdown_x",
+            "x_make_pypi_x",
+        ]
+    )
 
     results: List[Dict[str, Any]] = []
     any_fail = False
@@ -55,12 +63,14 @@ if __name__ == "__main__":
         curr = get_installed_version(pkg)
         if code != 0:
             any_fail = True
-        results.append({
-            "name": pkg,
-            "prev": prev,
-            "curr": curr,
-            "code": code,
-        })
+        results.append(
+            {
+                "name": pkg,
+                "prev": prev,
+                "curr": curr,
+                "code": code,
+            }
+        )
 
     # Print summary
     print("\nSummary:")
