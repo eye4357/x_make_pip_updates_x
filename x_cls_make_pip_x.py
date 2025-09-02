@@ -9,6 +9,30 @@ from typing import cast
 
 
 class x_cls_make_pip_x:
+    def batch_install(self, packages: list[str], use_user: bool = False) -> int:
+        results = []
+        any_fail = False
+        for pkg in packages:
+            prev = self.get_installed_version(pkg)
+            self.user = use_user
+            self.ensure(pkg)
+            curr = self.get_installed_version(pkg)
+            code = 0 if curr else 1
+            if code != 0:
+                any_fail = True
+            results.append({
+                "name": pkg,
+                "prev": prev,
+                "curr": curr,
+                "code": code,
+            })
+        print("\nSummary:")
+        for r in results:
+            prev = r["prev"] or "not installed"
+            curr = r["curr"] or "not installed"
+            status = "OK" if r["code"] == 0 else f"FAIL (code {r['code']})"
+            print(f"- {r['name']}: {status} | previous: {prev} -> current: {curr}")
+        return 1 if any_fail else 0
     """
     Ensure a Python package is installed and up-to-date in the current interpreter.
 
@@ -91,9 +115,13 @@ class x_cls_make_pip_x:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python -m x_make_pip_x.x_cls_make_pip_x <package-name> [--user]")
-        sys.exit(2)
-    pkg = sys.argv[1]
-    use_user = "--user" in sys.argv[2:]
-    x_cls_make_pip_x(user=use_user).ensure(pkg)
+    raw_args = sys.argv[1:]
+    use_user_flag = "--user" in raw_args
+    args = [a for a in raw_args if not a.startswith("-")]
+    packages = args if args else [
+        "x_make_markdown_x",
+        "x_make_pypi_x",
+        "x_make_github_clones_x"
+    ]
+    exit_code = x_cls_make_pip_x(user=use_user_flag).batch_install(packages, use_user_flag)
+    sys.exit(exit_code)
