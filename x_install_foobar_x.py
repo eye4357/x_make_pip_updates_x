@@ -49,6 +49,7 @@ if __name__ == "__main__":
         else [
             "x_make_markdown_x",
             "x_make_pypi_x",
+            "x_make_github_clones_x"
         ]
     )
 
