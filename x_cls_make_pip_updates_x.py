@@ -21,13 +21,9 @@ class x_cls_make_pip_updates_x:
         if code != 0:
             print("Failed to upgrade pip. Continuing anyway.")
 
-        results = []
-        any_fail = False
+        # After publishing, upgrade all published packages
+        print("Upgrading all published packages with --upgrade --no-cache-dir...")
         for pkg in packages:
-            prev = self.get_installed_version(pkg)
-            self.user = use_user
-            # Use --upgrade --no-cache-dir for each package
-            print(f"Upgrading {pkg} with --upgrade --no-cache-dir...")
             cmd = [sys.executable, "-m", "pip", "install", "--upgrade", "--no-cache-dir"]
             if use_user:
                 cmd.append("--user")
@@ -37,6 +33,12 @@ class x_cls_make_pip_updates_x:
                 print(out.strip())
             if err and code != 0:
                 print(err.strip())
+
+        results = []
+        any_fail = False
+        for pkg in packages:
+            prev = self.get_installed_version(pkg)
+            self.user = use_user
             curr = self.get_installed_version(pkg)
             code = 0 if curr else 1
             if code != 0:
