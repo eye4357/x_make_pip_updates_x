@@ -10,12 +10,33 @@ from typing import cast
 
 class x_cls_make_pip_updates_x:
     def batch_install(self, packages: list[str], use_user: bool = False) -> int:
+        # Force pip upgrade first
+        print("Upgrading pip itself...")
+        pip_upgrade_cmd = [sys.executable, "-m", "pip", "install", "--upgrade", "pip"]
+        code, out, err = self._run(pip_upgrade_cmd)
+        if out:
+            print(out.strip())
+        if err and code != 0:
+            print(err.strip())
+        if code != 0:
+            print("Failed to upgrade pip. Continuing anyway.")
+
         results = []
         any_fail = False
         for pkg in packages:
             prev = self.get_installed_version(pkg)
             self.user = use_user
-            self.ensure(pkg)
+            # Use --upgrade --no-cache-dir for each package
+            print(f"Upgrading {pkg} with --upgrade --no-cache-dir...")
+            cmd = [sys.executable, "-m", "pip", "install", "--upgrade", "--no-cache-dir"]
+            if use_user:
+                cmd.append("--user")
+            cmd.append(pkg)
+            code, out, err = self._run(cmd)
+            if out:
+                print(out.strip())
+            if err and code != 0:
+                print(err.strip())
             curr = self.get_installed_version(pkg)
             code = 0 if curr else 1
             if code != 0:
