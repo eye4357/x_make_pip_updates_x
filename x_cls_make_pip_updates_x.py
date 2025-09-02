@@ -22,9 +22,9 @@ class x_cls_make_pip_updates_x:
             print("Failed to upgrade pip. Continuing anyway.")
 
         # After publishing, upgrade all published packages
-        print("Upgrading all published packages with --upgrade --no-cache-dir...")
+        print("Upgrading all published packages with --upgrade --force-reinstall --no-cache-dir...")
         for pkg in packages:
-            cmd = [sys.executable, "-m", "pip", "install", "--upgrade", "--no-cache-dir"]
+            cmd = [sys.executable, "-m", "pip", "install", "--upgrade", "--force-reinstall", "--no-cache-dir"]
             if use_user:
                 cmd.append("--user")
             cmd.append(pkg)
@@ -51,10 +51,10 @@ class x_cls_make_pip_updates_x:
             })
         print("\nSummary:")
         for r in results:
-            prev = r["prev"] or "not installed"
-            curr = r["curr"] or "not installed"
+            prev = r["prev"] if r["prev"] else "not installed"
+            curr = r["curr"] if r["curr"] else "not installed"
             status = "OK" if r["code"] == 0 else f"FAIL (code {r['code']})"
-            print(f"- {r['name']}: {status} | previous: {prev} -> current: {curr}")
+            print(f"- {r['name']}: {status} | current: {curr}")
         return 1 if any_fail else 0
     """
     Ensure a Python package is installed and up-to-date in the current interpreter.
