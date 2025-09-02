@@ -8,7 +8,7 @@ from importlib.metadata import version as _version
 from typing import cast
 
 
-class x_cls_make_pip_x:
+class x_cls_make_pip_updates_x:
     def batch_install(self, packages: list[str], use_user: bool = False) -> int:
         results = []
         any_fail = False
@@ -123,5 +123,5 @@ if __name__ == "__main__":
         "x_make_pypi_x",
         "x_make_github_clones_x"
     ]
-    exit_code = x_cls_make_pip_x(user=use_user_flag).batch_install(packages, use_user_flag)
+    exit_code = x_cls_make_pip_updates_x(user=use_user_flag).batch_install(packages, use_user_flag)
     sys.exit(exit_code)
