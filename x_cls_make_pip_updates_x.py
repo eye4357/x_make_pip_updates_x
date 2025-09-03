@@ -6,7 +6,8 @@ import sys
 from collections.abc import Callable
 from importlib.metadata import version as _version
 from typing import cast
-'''red rabbit 2025_0902_0944'''
+
+"""red rabbit 2025_0902_0944"""
 
 
 class x_cls_make_pip_updates_x:
@@ -25,7 +26,15 @@ class x_cls_make_pip_updates_x:
         # After publishing, upgrade all published packages
         print("Upgrading all published packages with --upgrade --force-reinstall --no-cache-dir...")
         for pkg in packages:
-            cmd = [sys.executable, "-m", "pip", "install", "--upgrade", "--force-reinstall", "--no-cache-dir"]
+            cmd = [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "--upgrade",
+                "--force-reinstall",
+                "--no-cache-dir",
+            ]
             if use_user:
                 cmd.append("--user")
             cmd.append(pkg)
@@ -38,25 +47,30 @@ class x_cls_make_pip_updates_x:
         results = []
         any_fail = False
         for pkg in packages:
-            prev = self.get_installed_version(pkg)
+            prev: str | None = self.get_installed_version(pkg)
             self.user = use_user
-            curr = self.get_installed_version(pkg)
+            curr: str | None = self.get_installed_version(pkg)
             code = 0 if curr else 1
             if code != 0:
                 any_fail = True
-            results.append({
-                "name": pkg,
-                "prev": prev,
-                "curr": curr,
-                "code": code,
-            })
+            results.append(
+                {
+                    "name": pkg,
+                    "prev": prev,
+                    "curr": curr,
+                    "code": code,
+                }
+            )
         print("\nSummary:")
         for r in results:
-            prev = r["prev"] if r["prev"] else "not installed"
-            curr = r["curr"] if r["curr"] else "not installed"
+            prev_val = r.get("prev")
+            prev = prev_val if isinstance(prev_val, str) and prev_val else "not installed"
+            curr_val = r.get("curr")
+            curr = curr_val if isinstance(curr_val, str) and curr_val else "not installed"
             status = "OK" if r["code"] == 0 else f"FAIL (code {r['code']})"
             print(f"- {r['name']}: {status} | current: {curr}")
         return 1 if any_fail else 0
+
     """
     Ensure a Python package is installed and up-to-date in the current interpreter.
 
@@ -79,7 +93,9 @@ class x_cls_make_pip_updates_x:
     def get_installed_version(dist_name: str) -> str | None:
         try:
             _ver: Callable[[str], str] = cast(Callable[[str], str], _version)
-            return _ver(dist_name)
+            res = _ver(dist_name)
+            # Coerce to str in case metadata returns a non-str representation
+            return str(res) if res is not None else None
         except Exception:
             return None
 
@@ -142,11 +158,15 @@ if __name__ == "__main__":
     raw_args = sys.argv[1:]
     use_user_flag = "--user" in raw_args
     args = [a for a in raw_args if not a.startswith("-")]
-    packages = args if args else [
-        "x_make_markdown_x",
-        "x_make_pypi_x",
-        "x_make_github_clones_x",
-        "x_make_pip_updates_x"
-    ]
+    packages = (
+        args
+        if args
+        else [
+            "x_make_markdown_x",
+            "x_make_pypi_x",
+            "x_make_github_clones_x",
+            "x_make_pip_updates_x",
+        ]
+    )
     exit_code = x_cls_make_pip_updates_x(user=use_user_flag).batch_install(packages, use_user_flag)
     sys.exit(exit_code)
