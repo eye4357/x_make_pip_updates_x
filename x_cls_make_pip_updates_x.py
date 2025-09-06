@@ -10,9 +10,6 @@ from typing import cast
 """red rabbit 2025_0902_0944"""
 
 
-import sys
-
-
 def _info(*args: object) -> None:
     try:
         print(" ".join(str(a) for a in args), file=sys.stdout)
@@ -186,7 +183,9 @@ class x_cls_make_pip_updates_x:
             if code != 0:
                 _error(f"Failed to install {dist_name} (exit {code}).")
             return
-        _info(f"{dist_name} installed (version {installed}). Checking for updates...")
+        _info(
+            f"{dist_name} installed (version {installed}). Checking for updates..."
+        )
         if self.is_outdated(dist_name):
             _info(f"{dist_name} is outdated. Upgrading...")
             code = self.pip_install(dist_name, upgrade=True)
