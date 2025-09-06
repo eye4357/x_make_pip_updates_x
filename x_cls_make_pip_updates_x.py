@@ -10,34 +10,21 @@ from typing import cast
 """red rabbit 2025_0902_0944"""
 
 
-# No-op logging shim (tools.logging_helper removed)
-class _NoopLogger:
-    def debug(self, *a: object, **k: object) -> None:
-        return None
-
-    def info(self, *a: object, **k: object) -> None:
-        return None
-
-    def warning(self, *a: object, **k: object) -> None:
-        return None
-
-    def error(self, *a: object, **k: object) -> None:
-        return None
-
-    def exception(self, *a: object, **k: object) -> None:
-        return None
+import sys
 
 
-_SILENT_LOGGER = _NoopLogger()
+def _info(*args: object) -> None:
+    try:
+        print(" ".join(str(a) for a in args), file=sys.stdout)
+    except Exception:
+        pass
 
 
-def setup_basic_logger(
-    name: str = "x_make", *, file_path: str | None = None
-) -> _NoopLogger:
-    return _SILENT_LOGGER
-
-
-logger: _NoopLogger = setup_basic_logger("x_make_pip_updates")
+def _error(*args: object) -> None:
+    try:
+        print(" ".join(str(a) for a in args), file=sys.stderr)
+    except Exception:
+        pass
 
 
 class x_cls_make_pip_updates_x:
@@ -45,7 +32,7 @@ class x_cls_make_pip_updates_x:
         self, packages: list[str], use_user: bool = False
     ) -> int:
         # Force pip upgrade first
-        logger.info("Upgrading pip itself...")
+        _info("Upgrading pip itself...")
         pip_upgrade_cmd = [
             sys.executable,
             "-m",
@@ -56,14 +43,14 @@ class x_cls_make_pip_updates_x:
         ]
         code, out, err = self._run(pip_upgrade_cmd)
         if out:
-            logger.info(out.strip())
+            _info(out.strip())
         if err and code != 0:
-            logger.error(err.strip())
+            _error(err.strip())
         if code != 0:
-            logger.warning("Failed to upgrade pip. Continuing anyway.")
+            _info("Failed to upgrade pip. Continuing anyway.")
 
         # After publishing, upgrade all published packages
-        logger.info(
+        _info(
             "Upgrading all published packages with --upgrade --force-reinstall --no-cache-dir..."
         )
         for pkg in packages:
@@ -81,9 +68,9 @@ class x_cls_make_pip_updates_x:
             cmd.append(pkg)
             code, out, err = self._run(cmd)
             if out:
-                logger.info(out.strip())
+                _info(out.strip())
             if err and code != 0:
-                logger.error(err.strip())
+                _error(err.strip())
 
         results = []
         any_fail = False
@@ -102,7 +89,8 @@ class x_cls_make_pip_updates_x:
                     "code": code,
                 }
             )
-        logger.info("\nSummary:")
+
+        _info("\nSummary:")
         for r in results:
             prev_val = r.get("prev")
             prev = (
@@ -117,7 +105,7 @@ class x_cls_make_pip_updates_x:
                 else "not installed"
             )
             status = "OK" if r["code"] == 0 else f"FAIL (code {r['code']})"
-            logger.info("- %s: %s | current: %s", r["name"], status, curr)
+            _info(f"- {r['name']}: {status} | current: {curr}")
         return 1 if any_fail else 0
 
     """
@@ -160,7 +148,7 @@ class x_cls_make_pip_updates_x:
         ]
         code, out, err = self._run(cmd)
         if code != 0:
-            logger.error("pip list failed (%d): %s", code, err.strip())
+            _error(f"pip list failed ({code}): {err.strip()}")
             return False
         try:
             for item in json.loads(out or "[]"):
@@ -185,35 +173,27 @@ class x_cls_make_pip_updates_x:
         cmd.append(dist_name)
         code, out, err = self._run(cmd)
         if out:
-            logger.info(out.strip())
+            _info(out.strip())
         if err and code != 0:
-            logger.error(err.strip())
+            _error(err.strip())
         return code
 
     def ensure(self, dist_name: str) -> None:
         installed = self.get_installed_version(dist_name)
         if installed is None:
-            logger.info("%s not installed. Installing...", dist_name)
+            _info(f"{dist_name} not installed. Installing...")
             code = self.pip_install(dist_name, upgrade=False)
             if code != 0:
-                logger.error(
-                    "Failed to install %s (exit %s).", dist_name, code
-                )
+                _error(f"Failed to install {dist_name} (exit {code}).")
             return
-        logger.info(
-            "%s installed (version %s). Checking for updates...",
-            dist_name,
-            installed,
-        )
+        _info(f"{dist_name} installed (version {installed}). Checking for updates...")
         if self.is_outdated(dist_name):
-            logger.info("%s is outdated. Upgrading...", dist_name)
+            _info(f"{dist_name} is outdated. Upgrading...")
             code = self.pip_install(dist_name, upgrade=True)
             if code != 0:
-                logger.error(
-                    "Failed to upgrade %s (exit %s).", dist_name, code
-                )
+                _error(f"Failed to upgrade {dist_name} (exit {code}).")
         else:
-            logger.info("%s is up to date.", dist_name)
+            _info(f"{dist_name} is up to date.")
 
 
 if __name__ == "__main__":
