@@ -8,38 +8,52 @@ from importlib.metadata import version as _version
 from typing import cast
 
 """red rabbit 2025_0902_0944"""
+
+
 # No-op logging shim (tools.logging_helper removed)
 class _NoopLogger:
-    def debug(self, *a, **k):
+    def debug(self, *a: object, **k: object) -> None:
         return None
 
-    def info(self, *a, **k):
+    def info(self, *a: object, **k: object) -> None:
         return None
 
-    def warning(self, *a, **k):
+    def warning(self, *a: object, **k: object) -> None:
         return None
 
-    def error(self, *a, **k):
+    def error(self, *a: object, **k: object) -> None:
         return None
 
-    def exception(self, *a, **k):
+    def exception(self, *a: object, **k: object) -> None:
         return None
 
 
 _SILENT_LOGGER = _NoopLogger()
 
 
-def setup_basic_logger(name: str = "x_make", *, file_path: str | None = None):
+def setup_basic_logger(
+    name: str = "x_make", *, file_path: str | None = None
+) -> _NoopLogger:
     return _SILENT_LOGGER
 
-logger = setup_basic_logger("x_make_pip_updates")
+
+logger: _NoopLogger = setup_basic_logger("x_make_pip_updates")
 
 
 class x_cls_make_pip_updates_x:
-    def batch_install(self, packages: list[str], use_user: bool = False) -> int:
+    def batch_install(
+        self, packages: list[str], use_user: bool = False
+    ) -> int:
         # Force pip upgrade first
         logger.info("Upgrading pip itself...")
-        pip_upgrade_cmd = [sys.executable, "-m", "pip", "install", "--upgrade", "pip"]
+        pip_upgrade_cmd = [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--upgrade",
+            "pip",
+        ]
         code, out, err = self._run(pip_upgrade_cmd)
         if out:
             logger.info(out.strip())
@@ -91,9 +105,17 @@ class x_cls_make_pip_updates_x:
         logger.info("\nSummary:")
         for r in results:
             prev_val = r.get("prev")
-            prev = prev_val if isinstance(prev_val, str) and prev_val else "not installed"
+            prev = (
+                prev_val
+                if isinstance(prev_val, str) and prev_val
+                else "not installed"
+            )
             curr_val = r.get("curr")
-            curr = curr_val if isinstance(curr_val, str) and curr_val else "not installed"
+            curr = (
+                curr_val
+                if isinstance(curr_val, str) and curr_val
+                else "not installed"
+            )
             status = "OK" if r["code"] == 0 else f"FAIL (code {r['code']})"
             logger.info("- %s: %s | current: %s", r["name"], status, curr)
         return 1 if any_fail else 0
@@ -149,7 +171,13 @@ class x_cls_make_pip_updates_x:
         return False
 
     def pip_install(self, dist_name: str, upgrade: bool = False) -> int:
-        cmd = [sys.executable, "-m", "pip", "install", "--disable-pip-version-check"]
+        cmd = [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--disable-pip-version-check",
+        ]
         if upgrade:
             cmd.append("--upgrade")
         if self.user:
@@ -168,14 +196,22 @@ class x_cls_make_pip_updates_x:
             logger.info("%s not installed. Installing...", dist_name)
             code = self.pip_install(dist_name, upgrade=False)
             if code != 0:
-                logger.error("Failed to install %s (exit %s).", dist_name, code)
+                logger.error(
+                    "Failed to install %s (exit %s).", dist_name, code
+                )
             return
-        logger.info("%s installed (version %s). Checking for updates...", dist_name, installed)
+        logger.info(
+            "%s installed (version %s). Checking for updates...",
+            dist_name,
+            installed,
+        )
         if self.is_outdated(dist_name):
             logger.info("%s is outdated. Upgrading...", dist_name)
             code = self.pip_install(dist_name, upgrade=True)
             if code != 0:
-                logger.error("Failed to upgrade %s (exit %s).", dist_name, code)
+                logger.error(
+                    "Failed to upgrade %s (exit %s).", dist_name, code
+                )
         else:
             logger.info("%s is up to date.", dist_name)
 
@@ -194,5 +230,7 @@ if __name__ == "__main__":
             "x_make_pip_updates_x",
         ]
     )
-    exit_code = x_cls_make_pip_updates_x(user=use_user_flag).batch_install(packages, use_user_flag)
+    exit_code = x_cls_make_pip_updates_x(user=use_user_flag).batch_install(
+        packages, use_user_flag
+    )
     sys.exit(exit_code)
