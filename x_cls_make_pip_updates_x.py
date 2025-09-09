@@ -25,6 +25,8 @@ def _error(*args: object) -> None:
 
 
 class x_cls_make_pip_updates_x:
+    # ...existing code...
+
     def batch_install(
         self, packages: list[str], use_user: bool = False
     ) -> int:
@@ -113,8 +115,21 @@ class x_cls_make_pip_updates_x:
     - Uses the same Python executable (sys.executable -m pip).
     """
 
-    def __init__(self, user: bool = False) -> None:
+    def __init__(self, user: bool = False, ctx: object | None = None) -> None:
+        """Primary constructor: preserve previous 'user' flag and accept ctx.
+
+        Dry-run is now sourced from the orchestrator context when provided.
+        If no context is provided, default to False.
+        """
         self.user = user
+        self._ctx = ctx
+        try:
+            self.dry_run = bool(getattr(self._ctx, "dry_run", False))
+        except Exception:
+            self.dry_run = False
+
+        if getattr(self._ctx, "verbose", False):
+            print(f"[pip_updates] initialized user={self.user}")
 
     @staticmethod
     def _run(cmd: list[str]) -> tuple[int, str, str]:
