@@ -6,22 +6,12 @@ import sys
 from collections.abc import Callable
 from importlib.metadata import version as _version
 from typing import cast
+from x_make_common_x.helpers import info as _info, error as _error
 
 """red rabbit 2025_0902_0944"""
 
 
-def _info(*args: object) -> None:
-    try:
-        print(" ".join(str(a) for a in args), file=sys.stdout)
-    except Exception:
-        pass
-
-
-def _error(*args: object) -> None:
-    try:
-        print(" ".join(str(a) for a in args), file=sys.stderr)
-    except Exception:
-        pass
+# use shared helpers from x_make_common_x.helpers
 
 
 class x_cls_make_pip_updates_x:
@@ -129,7 +119,9 @@ class x_cls_make_pip_updates_x:
             self.dry_run = False
 
         if getattr(self._ctx, "verbose", False):
-            print(f"[pip_updates] initialized user={self.user}")
+            from x_make_common_x.helpers import info as _info
+
+            _info(f"[pip_updates] initialized user={self.user}")
 
     @staticmethod
     def _run(cmd: list[str]) -> tuple[int, str, str]:
