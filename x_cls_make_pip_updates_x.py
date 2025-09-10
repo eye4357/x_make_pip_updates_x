@@ -6,7 +6,43 @@ import sys
 from collections.abc import Callable
 from importlib.metadata import version as _version
 from typing import cast
-from x_make_common_x.helpers import info as _info, error as _error
+import logging
+import sys as _sys
+
+_LOGGER = logging.getLogger("x_make")
+
+
+def _info(*args: object) -> None:
+    msg = " ".join(str(a) for a in args)
+    try:
+        _LOGGER.info("%s", msg)
+    except Exception:
+        pass
+    try:
+        print(msg)
+    except Exception:
+        try:
+            _sys.stdout.write(msg + "\n")
+        except Exception:
+            pass
+
+
+def _error(*args: object) -> None:
+    msg = " ".join(str(a) for a in args)
+    try:
+        _LOGGER.error("%s", msg)
+    except Exception:
+        pass
+    try:
+        print(msg, file=_sys.stderr)
+    except Exception:
+        try:
+            _sys.stderr.write(msg + "\n")
+        except Exception:
+            try:
+                print(msg)
+            except Exception:
+                pass
 
 """red rabbit 2025_0902_0944"""
 
@@ -119,8 +155,6 @@ class x_cls_make_pip_updates_x:
             self.dry_run = False
 
         if getattr(self._ctx, "verbose", False):
-            from x_make_common_x.helpers import info as _info
-
             _info(f"[pip_updates] initialized user={self.user}")
 
     @staticmethod
