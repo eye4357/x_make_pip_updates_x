@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import subprocess
 import sys
+import sys as _sys
 from collections.abc import Callable
 from importlib.metadata import version as _version
 from typing import cast
-import logging
-import sys as _sys
 
 _LOGGER = logging.getLogger("x_make")
 
@@ -168,7 +168,7 @@ class x_cls_make_pip_updates_x:
     @staticmethod
     def get_installed_version(dist_name: str) -> str | None:
         try:
-            _ver: Callable[[str], str] = cast(Callable[[str], str], _version)
+            _ver: Callable[[str], str] = cast("Callable[[str], str]", _version)
             res = _ver(dist_name)
             # Coerce to str in case metadata returns a non-str representation
             return str(res) if res is not None else None
