@@ -54,9 +54,7 @@ def _error(*args: object) -> None:
 class x_cls_make_pip_updates_x:
     # ...existing code...
 
-    def batch_install(
-        self, packages: list[str], use_user: bool = False
-    ) -> int:
+    def batch_install(self, packages: list[str], *, use_user: bool = False) -> int:
         # Force pip upgrade first
         _info("Upgrading pip itself...")
         pip_upgrade_cmd = [
@@ -98,7 +96,7 @@ class x_cls_make_pip_updates_x:
             if err and code != 0:
                 _error(err.strip())
 
-        results = []
+        results: list[dict[str, str | int | None]] = []
         any_fail = False
         for pkg in packages:
             prev: str | None = self.get_installed_version(pkg)
@@ -120,15 +118,11 @@ class x_cls_make_pip_updates_x:
         for r in results:
             prev_val = r.get("prev")
             prev = (
-                prev_val
-                if isinstance(prev_val, str) and prev_val
-                else "not installed"
+                prev_val if isinstance(prev_val, str) and prev_val else "not installed"
             )
             curr_val = r.get("curr")
             curr = (
-                curr_val
-                if isinstance(curr_val, str) and curr_val
-                else "not installed"
+                curr_val if isinstance(curr_val, str) and curr_val else "not installed"
             )
             status = "OK" if r["code"] == 0 else f"FAIL (code {r['code']})"
             _info(f"- {r['name']}: {status} | current: {curr}")
@@ -168,10 +162,9 @@ class x_cls_make_pip_updates_x:
     @staticmethod
     def get_installed_version(dist_name: str) -> str | None:
         try:
-            _ver: Callable[[str], str] = cast("Callable[[str], str]", _version)
+            _ver = cast("Callable[[str], str]", _version)
             res = _ver(dist_name)
-            # Coerce to str in case metadata returns a non-str representation
-            return str(res) if res is not None else None
+            return str(res)
         except Exception:
             return None
 
@@ -225,9 +218,7 @@ class x_cls_make_pip_updates_x:
             if code != 0:
                 _error(f"Failed to install {dist_name} (exit {code}).")
             return
-        _info(
-            f"{dist_name} installed (version {installed}). Checking for updates..."
-        )
+        _info(f"{dist_name} installed (version {installed}). Checking for updates...")
         if self.is_outdated(dist_name):
             _info(f"{dist_name} is outdated. Upgrading...")
             code = self.pip_install(dist_name, upgrade=True)
@@ -252,6 +243,7 @@ if __name__ == "__main__":
         ]
     )
     exit_code = x_cls_make_pip_updates_x(user=use_user_flag).batch_install(
-        packages, use_user_flag
+        packages,
+        use_user=use_user_flag,
     )
     sys.exit(exit_code)
