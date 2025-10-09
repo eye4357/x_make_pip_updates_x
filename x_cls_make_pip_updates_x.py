@@ -182,11 +182,20 @@ class x_cls_make_pip_updates_x:
             _error(f"pip list failed ({code}): {err.strip()}")
             return False
         try:
-            for item in json.loads(out or "[]"):
-                if item.get("name", "").lower() == dist_name.lower():
-                    return True
+            loaded_obj: object = json.loads(out or "[]")
         except json.JSONDecodeError:
-            pass
+            return False
+
+        if not isinstance(loaded_obj, list):
+            return False
+
+        for entry_obj in loaded_obj:
+            if not isinstance(entry_obj, dict):
+                continue
+            entry = cast("dict[str, object]", entry_obj)
+            name = entry.get("name")
+            if isinstance(name, str) and name.lower() == dist_name.lower():
+                return True
         return False
 
     def pip_install(self, dist_name: str, upgrade: bool = False) -> int:
