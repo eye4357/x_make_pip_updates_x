@@ -6,6 +6,7 @@ import subprocess
 import sys
 import sys as _sys
 from collections.abc import Callable
+from dataclasses import dataclass
 from importlib.metadata import version as _version
 from typing import cast
 
@@ -49,6 +50,17 @@ def _error(*args: object) -> None:
 
 
 # use shared helpers from x_make_common_x.helpers
+
+
+RunResult = tuple[int, str, str]
+
+
+@dataclass(slots=True)
+class InstallResult:
+    name: str
+    prev: str | None
+    curr: str | None
+    code: int
 
 
 class x_cls_make_pip_updates_x:
@@ -96,7 +108,7 @@ class x_cls_make_pip_updates_x:
             if err and code != 0:
                 _error(err.strip())
 
-        results: list[dict[str, str | int | None]] = []
+        results: list[InstallResult] = []
         any_fail = False
         for pkg in packages:
             prev: str | None = self.get_installed_version(pkg)
@@ -105,27 +117,14 @@ class x_cls_make_pip_updates_x:
             code = 0 if curr else 1
             if code != 0:
                 any_fail = True
-            results.append(
-                {
-                    "name": pkg,
-                    "prev": prev,
-                    "curr": curr,
-                    "code": code,
-                }
-            )
+            results.append(InstallResult(pkg, prev, curr, code))
 
         _info("\nSummary:")
         for r in results:
-            prev_val = r.get("prev")
-            prev = (
-                prev_val if isinstance(prev_val, str) and prev_val else "not installed"
-            )
-            curr_val = r.get("curr")
-            curr = (
-                curr_val if isinstance(curr_val, str) and curr_val else "not installed"
-            )
-            status = "OK" if r["code"] == 0 else f"FAIL (code {r['code']})"
-            _info(f"- {r['name']}: {status} | current: {curr}")
+            prev = r.prev or "not installed"
+            curr = r.curr or "not installed"
+            status = "OK" if r.code == 0 else f"FAIL (code {r.code})"
+            _info(f"- {r.name}: {status} | current: {curr}")
         return 1 if any_fail else 0
 
     """
@@ -153,7 +152,7 @@ class x_cls_make_pip_updates_x:
             _info(f"[pip_updates] initialized user={self.user}")
 
     @staticmethod
-    def _run(cmd: list[str]) -> tuple[int, str, str]:
+    def _run(cmd: list[str]) -> RunResult:
         cp = subprocess.run(cmd, text=True, capture_output=True, check=False)
         stdout = cp.stdout or ""
         stderr = cp.stderr or ""
