@@ -4,46 +4,45 @@ import json
 import logging
 import subprocess
 import sys
-import sys as _sys
-from collections.abc import Callable
+from collections.abc import Iterable, Mapping, Sequence
+from contextlib import suppress
 from dataclasses import dataclass
+from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _version
 from typing import cast
 
 _LOGGER = logging.getLogger("x_make")
+_sys = sys
 
 
 def _info(*args: object) -> None:
     msg = " ".join(str(a) for a in args)
-    try:
+    with suppress(Exception):
         _LOGGER.info("%s", msg)
-    except Exception:
-        pass
-    try:
+    printed = False
+    with suppress(Exception):
         print(msg)
-    except Exception:
-        try:
+        printed = True
+    if not printed:
+        with suppress(Exception):
             _sys.stdout.write(msg + "\n")
-        except Exception:
-            pass
 
 
 def _error(*args: object) -> None:
     msg = " ".join(str(a) for a in args)
-    try:
+    with suppress(Exception):
         _LOGGER.error("%s", msg)
-    except Exception:
-        pass
-    try:
+    wrote = False
+    with suppress(Exception):
         print(msg, file=_sys.stderr)
-    except Exception:
-        try:
+        wrote = True
+    if not wrote:
+        with suppress(Exception):
             _sys.stderr.write(msg + "\n")
-        except Exception:
-            try:
-                print(msg)
-            except Exception:
-                pass
+            wrote = True
+    if not wrote:
+        with suppress(Exception):
+            print(msg)
 
 
 """red rabbit 2025_0902_0944"""
@@ -63,10 +62,31 @@ class InstallResult:
     code: int
 
 
-class x_cls_make_pip_updates_x:
+class PipUpdatesRunner:
     # ...existing code...
 
-    def batch_install(self, packages: list[str], *, use_user: bool = False) -> int:
+    @staticmethod
+    def _ctx_flag(ctx: object | None, attr: str) -> bool:
+        if ctx is None:
+            return False
+        if isinstance(ctx, Mapping):
+            mapping_ctx = cast("Mapping[str, object]", ctx)
+            value = mapping_ctx.get(attr, False)
+        else:
+            try:
+                value = cast("object", getattr(ctx, attr, False))
+            except AttributeError:
+                return False
+        raw: object = value
+        if isinstance(raw, bool):
+            return raw
+        if isinstance(raw, (int, float)):
+            return raw != 0
+        if isinstance(raw, str):
+            return raw.lower() in {"1", "true", "yes", "on"}
+        return bool(raw)
+
+    def batch_install(self, packages: Sequence[str], *, use_user: bool = False) -> int:
         # Force pip upgrade first
         _info("Upgrading pip itself...")
         pip_upgrade_cmd = [
@@ -77,55 +97,27 @@ class x_cls_make_pip_updates_x:
             "--upgrade",
             "pip",
         ]
-        code, out, err = self._run(pip_upgrade_cmd)
-        if out:
-            _info(out.strip())
-        if err and code != 0:
-            _error(err.strip())
-        if code != 0:
+        pip_upgrade_code = self._run_and_report(pip_upgrade_cmd)[0]
+        if pip_upgrade_code != 0:
             _info("Failed to upgrade pip. Continuing anyway.")
 
-        # After publishing, upgrade all published packages
+        seen: set[str] = set()
+        normalized: list[str] = []
+        for pkg in packages:
+            if pkg not in seen:
+                seen.add(pkg)
+                normalized.append(pkg)
+        if not normalized:
+            _info("No packages supplied; nothing to do.")
+            return 0
+
         _info(
-            "Upgrading all published packages with --upgrade --force-reinstall --no-cache-dir..."
+            "Upgrading all published packages with "
+            "--upgrade --force-reinstall --no-cache-dir..."
         )
-        for pkg in packages:
-            cmd = [
-                sys.executable,
-                "-m",
-                "pip",
-                "install",
-                "--upgrade",
-                "--force-reinstall",
-                "--no-cache-dir",
-            ]
-            if use_user:
-                cmd.append("--user")
-            cmd.append(pkg)
-            code, out, err = self._run(cmd)
-            if out:
-                _info(out.strip())
-            if err and code != 0:
-                _error(err.strip())
 
-        results: list[InstallResult] = []
-        any_fail = False
-        for pkg in packages:
-            prev: str | None = self.get_installed_version(pkg)
-            self.user = use_user
-            curr: str | None = self.get_installed_version(pkg)
-            code = 0 if curr else 1
-            if code != 0:
-                any_fail = True
-            results.append(InstallResult(pkg, prev, curr, code))
-
-        _info("\nSummary:")
-        for r in results:
-            prev = r.prev or "not installed"
-            curr = r.curr or "not installed"
-            status = "OK" if r.code == 0 else f"FAIL (code {r.code})"
-            _info(f"- {r.name}: {status} | current: {curr}")
-        return 1 if any_fail else 0
+        results = [self._refresh_package(pkg, use_user=use_user) for pkg in normalized]
+        return self._summarize(results)
 
     """
     Ensure a Python package is installed and up-to-date in the current interpreter.
@@ -135,7 +127,7 @@ class x_cls_make_pip_updates_x:
     - Uses the same Python executable (sys.executable -m pip).
     """
 
-    def __init__(self, user: bool = False, ctx: object | None = None) -> None:
+    def __init__(self, *, user: bool = False, ctx: object | None = None) -> None:
         """Primary constructor: preserve previous 'user' flag and accept ctx.
 
         Dry-run is now sourced from the orchestrator context when provided.
@@ -143,28 +135,40 @@ class x_cls_make_pip_updates_x:
         """
         self.user = user
         self._ctx = ctx
-        try:
-            self.dry_run = bool(getattr(self._ctx, "dry_run", False))
-        except Exception:
-            self.dry_run = False
+        self.dry_run = self._ctx_flag(self._ctx, "dry_run")
 
-        if getattr(self._ctx, "verbose", False):
+        if self._ctx_flag(self._ctx, "verbose"):
             _info(f"[pip_updates] initialized user={self.user}")
 
     @staticmethod
     def _run(cmd: list[str]) -> RunResult:
-        cp = subprocess.run(cmd, text=True, capture_output=True, check=False)
+        cp = subprocess.run(  # noqa: S603
+            cmd,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
         stdout = cp.stdout or ""
         stderr = cp.stderr or ""
         return cp.returncode, stdout, stderr
 
+    def _run_and_report(self, cmd: Sequence[str]) -> RunResult:
+        code, out, err = self._run(list(cmd))
+        if out.strip():
+            _info(out.strip())
+        if err.strip() and code != 0:
+            _error(err.strip())
+        return code, out, err
+
     @staticmethod
     def get_installed_version(dist_name: str) -> str | None:
         try:
-            _ver = cast("Callable[[str], str]", _version)
-            res = _ver(dist_name)
+            res = _version(dist_name)
             return str(res)
-        except Exception:
+        except PackageNotFoundError:
+            return None
+        except ValueError as exc:  # pragma: no cover - defensive logging
+            _error(f"Failed to query version for {dist_name}: {exc}")
             return None
 
     def is_outdated(self, dist_name: str) -> bool:
@@ -182,23 +186,29 @@ class x_cls_make_pip_updates_x:
             _error(f"pip list failed ({code}): {err.strip()}")
             return False
         try:
-            loaded_obj: object = json.loads(out or "[]")
+            decoded: object = json.loads(out or "[]")
         except json.JSONDecodeError:
             return False
 
-        if not isinstance(loaded_obj, list):
+        if not isinstance(decoded, list):
             return False
 
-        for entry_obj in loaded_obj:
+        decoded_list = cast("list[object]", decoded)
+        for entry_obj in decoded_list:
             if not isinstance(entry_obj, dict):
                 continue
-            entry = cast("dict[str, object]", entry_obj)
-            name = entry.get("name")
-            if isinstance(name, str) and name.lower() == dist_name.lower():
+            entry_mapping = cast("dict[object, object]", entry_obj)
+            entry: dict[str, object] = {
+                key_obj: value_obj
+                for key_obj, value_obj in entry_mapping.items()
+                if isinstance(key_obj, str)
+            }
+            name_obj = entry.get("name")
+            if isinstance(name_obj, str) and name_obj.lower() == dist_name.lower():
                 return True
         return False
 
-    def pip_install(self, dist_name: str, upgrade: bool = False) -> int:
+    def pip_install(self, dist_name: str, *, upgrade: bool = False) -> int:
         cmd = [
             sys.executable,
             "-m",
@@ -211,12 +221,7 @@ class x_cls_make_pip_updates_x:
         if self.user:
             cmd.append("--user")
         cmd.append(dist_name)
-        code, out, err = self._run(cmd)
-        if out:
-            _info(out.strip())
-        if err and code != 0:
-            _error(err.strip())
-        return code
+        return self._run_and_report(cmd)[0]
 
     def ensure(self, dist_name: str) -> None:
         installed = self.get_installed_version(dist_name)
@@ -235,6 +240,50 @@ class x_cls_make_pip_updates_x:
         else:
             _info(f"{dist_name} is up to date.")
 
+    def _refresh_package(self, package: str, *, use_user: bool) -> InstallResult:
+        previous = self.get_installed_version(package)
+        self.user = use_user
+        cmd = self._build_refresh_command(package=package, use_user=use_user)
+        code = self._run_and_report(cmd)[0]
+        current = self.get_installed_version(package)
+        return InstallResult(package, previous, current, code)
+
+    @staticmethod
+    def _build_refresh_command(*, package: str, use_user: bool) -> list[str]:
+        cmd = [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--upgrade",
+            "--force-reinstall",
+            "--no-cache-dir",
+        ]
+        if use_user:
+            cmd.append("--user")
+        cmd.append(package)
+        return cmd
+
+    def _summarize(self, results: Iterable[InstallResult]) -> int:
+        entries = list(results)
+        if not entries:
+            _info("No packages were processed.")
+            return 0
+
+        _info("\nSummary:")
+        any_fail = False
+        for result in entries:
+            prev = result.prev or "not installed"
+            curr = result.curr or "not installed"
+            status = "OK" if result.code == 0 else f"FAIL (code {result.code})"
+            if result.code != 0:
+                any_fail = True
+            _info(f"- {result.name}: {status} | previous: {prev} | current: {curr}")
+        return 1 if any_fail else 0
+
+
+x_cls_make_pip_updates_x = PipUpdatesRunner
+
 
 if __name__ == "__main__":
     raw_args = sys.argv[1:]
@@ -250,7 +299,7 @@ if __name__ == "__main__":
             "x_4357_make_pip_updates_x",
         ]
     )
-    exit_code = x_cls_make_pip_updates_x(user=use_user_flag).batch_install(
+    exit_code = PipUpdatesRunner(user=use_user_flag).batch_install(
         packages,
         use_user=use_user_flag,
     )
