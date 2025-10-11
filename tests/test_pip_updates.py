@@ -1,21 +1,40 @@
 """Tests for the pip updates runner."""
 
+# ruff: noqa: S101, SLF001 - assertions and private member access are OK in tests
+
 from __future__ import annotations
 
 import json
 import subprocess
-from typing import TYPE_CHECKING
+import typing
+from importlib.metadata import PackageNotFoundError
+from typing import TYPE_CHECKING, ParamSpec, TypeVar, cast
 
-from pytest import fixture
+import pytest
 
 from x_make_pip_updates_x import x_cls_make_pip_updates_x as pip_module
 from x_make_pip_updates_x.x_cls_make_pip_updates_x import PipUpdatesRunner
 
+_P = ParamSpec("_P")
+_T = TypeVar("_T")
+
+
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from _pytest.monkeypatch import MonkeyPatch
 
+    def typed_fixture(func: Callable[_P, _T]) -> Callable[_P, _T]: ...
 
-@fixture
+else:
+    Callable = typing.Callable
+
+    def typed_fixture(func: Callable[_P, _T]) -> Callable[_P, _T]:
+        decorated = pytest.fixture()(func)
+        return cast("Callable[_P, _T]", decorated)
+
+
+@typed_fixture
 def runner() -> PipUpdatesRunner:
     return PipUpdatesRunner(user=False)
 
@@ -49,7 +68,7 @@ def test_get_installed_version_handles_missing_package(
     monkeypatch: MonkeyPatch,
 ) -> None:
     def fake_version(name: str) -> str:
-        raise pip_module.PackageNotFoundError(name)
+        raise PackageNotFoundError(name)
 
     monkeypatch.setattr(pip_module, "_version", fake_version)
 
@@ -57,17 +76,16 @@ def test_get_installed_version_handles_missing_package(
 
 
 def test_is_outdated_returns_true_when_package_listed(monkeypatch: MonkeyPatch) -> None:
-    payload = json.dumps(
-        [
-            {
-                "name": "SomePkg",
-                "version": "1.0",
-                "latest_version": "2.0",
-            }
-        ]
-    )
+    outdated_records: list[dict[str, str]] = [
+        {
+            "name": "SomePkg",
+            "version": "1.0",
+            "latest_version": "2.0",
+        }
+    ]
+    payload = json.dumps(outdated_records)
 
-    def fake_run(cmd: list[str]) -> tuple[int, str, str]:
+    def fake_run(_cmd: list[str]) -> tuple[int, str, str]:
         return 0, payload, ""
 
     monkeypatch.setattr(PipUpdatesRunner, "_run", staticmethod(fake_run))
@@ -76,7 +94,7 @@ def test_is_outdated_returns_true_when_package_listed(monkeypatch: MonkeyPatch) 
 
 
 def test_is_outdated_handles_non_json_response(monkeypatch: MonkeyPatch) -> None:
-    def fake_run(cmd: list[str]) -> tuple[int, str, str]:
+    def fake_run(_cmd: list[str]) -> tuple[int, str, str]:
         return 0, "not json", ""
 
     monkeypatch.setattr(PipUpdatesRunner, "_run", staticmethod(fake_run))
@@ -90,12 +108,15 @@ def test_batch_install_deduplicates_packages(
     pip_calls: list[list[str]] = []
 
     def fake_refresh(
-        self: PipUpdatesRunner, package: str, *, use_user: bool
+        _self: PipUpdatesRunner, package: str, *, use_user: bool
     ) -> pip_module.InstallResult:
         pip_calls.append([package, str(use_user)])
         return pip_module.InstallResult(package, "1.0", "2.0", 0)
 
-    def fake_run_report(self: PipUpdatesRunner, cmd: list[str]) -> tuple[int, str, str]:
+    def fake_run_report(
+        _self: PipUpdatesRunner,
+        _cmd: list[str],
+    ) -> tuple[int, str, str]:
         return 0, "", ""
 
     monkeypatch.setattr(PipUpdatesRunner, "_refresh_package", fake_refresh)
@@ -134,8 +155,13 @@ def test_run_executes_pip_and_returns_result(monkeypatch: MonkeyPatch) -> None:
     )
 
     def fake_run(
-        cmd: list[str], text: bool, capture_output: bool, check: bool
+        _cmd: list[str],
+        *,
+        text: bool = False,
+        capture_output: bool = False,
+        check: bool = False,
     ) -> subprocess.CompletedProcess[str]:
+        _ = (text, capture_output, check)
         return completed
 
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -153,7 +179,10 @@ def test_refresh_package_uses_install_result(monkeypatch: MonkeyPatch) -> None:
     def fake_version(name: str) -> str | None:
         return "1.0" if name == "foo" else "2.0"
 
-    def fake_run_report(self: PipUpdatesRunner, cmd: list[str]) -> tuple[int, str, str]:
+    def fake_run_report(
+        _self: PipUpdatesRunner,
+        cmd: list[str],
+    ) -> tuple[int, str, str]:
         calls.append(list(cmd))
         return 0, "", ""
 
@@ -169,4 +198,5 @@ def test_refresh_package_uses_install_result(monkeypatch: MonkeyPatch) -> None:
     assert isinstance(result, pip_module.InstallResult)
     assert result.prev == "1.0"
     assert result.curr == "1.0"
-    assert calls and "--user" in calls[0]
+    assert calls
+    assert "--user" in calls[0]
