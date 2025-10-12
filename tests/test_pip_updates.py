@@ -75,7 +75,9 @@ def test_get_installed_version_handles_missing_package(
     assert PipUpdatesRunner.get_installed_version("missing") is None
 
 
-def test_is_outdated_returns_true_when_package_listed(monkeypatch: MonkeyPatch) -> None:
+def test_is_outdated_returns_true_when_package_listed(
+    monkeypatch: MonkeyPatch,
+) -> None:
     outdated_records: list[dict[str, str]] = [
         {
             "name": "SomePkg",
@@ -93,7 +95,9 @@ def test_is_outdated_returns_true_when_package_listed(monkeypatch: MonkeyPatch) 
     assert PipUpdatesRunner().is_outdated("somepkg") is True
 
 
-def test_is_outdated_handles_non_json_response(monkeypatch: MonkeyPatch) -> None:
+def test_is_outdated_handles_non_json_response(
+    monkeypatch: MonkeyPatch,
+) -> None:
     def fake_run(_cmd: list[str]) -> tuple[int, str, str]:
         return 0, "not json", ""
 
