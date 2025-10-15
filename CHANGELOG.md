@@ -2,6 +2,10 @@
 
 All notable changes to x_make_pip_updates_x are recorded here. We follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) guidance and Semantic Versioning so upgrades never arrive unannounced.
 
+## [0.20.3] - 2025-10-14
+### Changed
+- README and ops guide rewritten to connect upgrade batches to the Road to 0.20.3 JSON telemetry.
+
 ## [0.20.2] - 2025-10-14
 ### Changed
 - Realigned documentation with the Road to 0.20.2 upgrade doctrine, clarifying dependency audit expectations for this release.

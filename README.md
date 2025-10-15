@@ -3,10 +3,10 @@
 > "Dependencies age fast. I keep them fresh, verified, and logged before they ever touch production."
 
 ## Manifesto
-x_make_pip_updates_x automates package audits and upgrades. It compares installed versus requested versions, enforces hash verification, and surfaces dependency graphs so the Road to 0.20.2 stack never goes stale.
+x_make_pip_updates_x automates package audits and upgrades. It compares installed versus requested versions, enforces hash verification, and surfaces dependency graphs so the Road to 0.20.3 stack never goes stale.
 
-## 0.20.2 Command Sequence
-Version 0.20.2 reaffirms the upgrade cadence for this lab. Every checklist in this README mirrors the Road to 0.20.2 control brief, so when dependencies move, I know exactly why and where the blast radius lands.
+## 0.20.3 Command Sequence
+Version 0.20.3 folds upgrade evidence into the JSON ledger. Every dependency move now emits diagnostics that link back to the visitor's per-file telemetry and the orchestrator snapshots.
 
 ## Ingredients
 - Python 3.11+
@@ -31,8 +31,8 @@ Version 0.20.2 reaffirms the upgrade cadence for this lab. Every checklist in th
 
 ## Distribution Chain
 - [Changelog](./CHANGELOG.md)
-- [Road to 0.20.2 Control Room Ledger](../x_0_make_all_x/Change%20Control/0.20.2/Road%20to%200.20.2%20Engineering%20Proposal.md)
-- [Road to 0.20.2 Engineering Proposal](../x_0_make_all_x/Change%20Control/0.20.2/Road%20to%200.20.2%20Engineering%20Proposal.md)
+- [Road to 0.20.3 Control Room Ledger](../x_0_make_all_x/Change%20Control/0.20.3/Road%20to%200.20.3%20Engineering%20Proposal.md)
+- [Road to 0.20.3 Engineering Proposal](../x_0_make_all_x/Change%20Control/0.20.3/Road%20to%200.20.3%20Engineering%20Proposal.md)
 
 ## Cross-Linked Intelligence
 - [x_make_pypi_x](../x_make_pypi_x/README.md) — consumes upgrade plans before publishing
