@@ -4,15 +4,21 @@ import json
 import logging
 import subprocess
 import sys
+import uuid
 from collections.abc import Iterable, Mapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _version
+from pathlib import Path
 from typing import cast
+
+from x_make_common_x import isoformat_timestamp, write_run_report
 
 _LOGGER = logging.getLogger("x_make")
 _sys = sys
+PACKAGE_ROOT = Path(__file__).resolve().parent
 
 
 def _info(*args: object) -> None:
@@ -299,8 +305,39 @@ if __name__ == "__main__":
             "x_4357_make_pip_updates_x",
         ]
     )
-    exit_code = PipUpdatesRunner(user=use_user_flag).batch_install(
-        packages,
-        use_user=use_user_flag,
-    )
+    start_time = datetime.now(UTC)
+    run_id = uuid.uuid4().hex
+    normalized_packages = list(dict.fromkeys(packages))
+    runner = PipUpdatesRunner(user=use_user_flag)
+    before_versions = {
+        pkg: runner.get_installed_version(pkg) for pkg in normalized_packages
+    }
+    exit_code = runner.batch_install(normalized_packages, use_user=use_user_flag)
+    after_versions = {
+        pkg: runner.get_installed_version(pkg) for pkg in normalized_packages
+    }
+    end_time = datetime.now(UTC)
+    payload: dict[str, object] = {
+        "run_id": run_id,
+        "started_at": isoformat_timestamp(start_time),
+        "completed_at": isoformat_timestamp(end_time),
+        "duration_seconds": round((end_time - start_time).total_seconds(), 3),
+        "invocation": {
+            "argv": raw_args,
+            "normalized_packages": normalized_packages,
+            "use_user": use_user_flag,
+            "python_executable": sys.executable,
+            "working_directory": str(Path.cwd()),
+        },
+        "results": [
+            {
+                "package": pkg,
+                "previous_version": before_versions.get(pkg),
+                "current_version": after_versions.get(pkg),
+            }
+            for pkg in normalized_packages
+        ],
+        "exit_code": exit_code,
+    }
+    write_run_report("x_make_pip_updates_x", payload, base_dir=PACKAGE_ROOT)
     sys.exit(exit_code)

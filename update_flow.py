@@ -4,12 +4,21 @@ import importlib.metadata as importlib_metadata
 import os
 import subprocess
 import sys
+import uuid
 from collections.abc import Iterable, Mapping, Sequence
 from contextlib import suppress
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol, cast
 
-from x_make_common_x import CommandError, log_error, log_info, run_command
+from x_make_common_x import (
+    CommandError,
+    isoformat_timestamp,
+    log_error,
+    log_info,
+    run_command,
+    write_run_report,
+)
 
 
 class PipUpdatesRunnerProtocol(Protocol):
@@ -29,12 +38,31 @@ class PipUpdatesInstantiationError(RuntimeError):
         )
 
 
+PACKAGE_ROOT = Path(__file__).resolve().parent
+
+
 def _info(*parts: object) -> None:
     log_info(*parts)
 
 
 def _error(*parts: object) -> None:
     log_error(*parts)
+
+
+def _json_ready(value: object) -> object:
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, Mapping):
+        typed = cast("Mapping[object, object]", value)
+        return {str(key): _json_ready(val) for key, val in typed.items()}
+    if isinstance(value, Sequence) and not isinstance(
+        value, (str, bytes, bytearray)
+    ):
+        typed_seq = cast("Sequence[object]", value)
+        return [_json_ready(entry) for entry in typed_seq]
+    return str(value)
 
 
 def _base_path_from_cloner(cloner: object, repo_parent_root: str) -> Path:
@@ -287,11 +315,14 @@ def _print_summary(
 def _perform_post_install_verification(
     packages: Sequence[str],
     published_artifacts: Mapping[str, Mapping[str, object]],
-) -> None:
+) -> dict[str, object]:
     _info("Starting post-install verification (lightweight checks only)")
     if not packages:
         _info("No packages provided for verification; skipping")
-        return
+        return {
+            "status": "skipped",
+            "reason": "no packages provided",
+        }
     missing = [pkg for pkg in packages if pkg not in published_artifacts]
     if missing:
         joined = ", ".join(sorted(missing))
@@ -299,11 +330,19 @@ def _perform_post_install_verification(
             "Skipping detailed verification because artifact metadata is missing for:",
             joined,
         )
-        return
+        return {
+            "status": "skipped",
+            "reason": "missing artifact metadata",
+            "missing": sorted(missing),
+        }
     _info(
         "Detailed file verification is not implemented in the typed orchestrator; "
         "skipping after validating artifact metadata presence",
     )
+    return {
+        "status": "performed",
+        "detail": "metadata validated; deep verification not implemented",
+    }
 
 
 def run_updates_for_packages(  # noqa: PLR0913
@@ -315,60 +354,183 @@ def run_updates_for_packages(  # noqa: PLR0913
     published_versions: Mapping[str, str | None],
     published_artifacts: Mapping[str, Mapping[str, object]],
     pip_updates_factory: PipUpdatesFactory,
-) -> None:
+) -> Path:
+    start_time = datetime.now(UTC)
+    run_id = uuid.uuid4().hex
     base_path = _base_path_from_cloner(cloner, repo_parent_root)
     script_path = _resolve_script_path(base_path)
     package_list = _normalize_packages(packages)
     use_user_flag = _override_use_user_flag(ctx, default=False)
 
-    if not package_list:
-        _info("No published packages to update; skipping pip-updates step")
-        return
-
-    used_script = False
-    script_rc: int | None = None
-    if script_path.is_file():
-        used_script, script_rc = _try_run_updates_script(
-            pip_updates_factory,
-            package_list,
-            ctx=ctx,
-            use_user_flag=use_user_flag,
-        )
-    else:
-        _info("pip-updates script not found; using direct pip fallback installation")
-
-    used_fallback = (not used_script) or (script_rc not in (None, 0))
-    if used_fallback:
-        _fallback_pip_install(
-            package_list,
-            published_versions,
-            use_user_flag=use_user_flag,
-        )
-
-    initial_installed = _get_installed_versions(package_list)
-    mismatches = _collect_mismatches(published_versions, initial_installed)
-    final_installed = dict(initial_installed)
-    retry_rc: int | None = None
-    if mismatches:
-        if used_script and not used_fallback and script_path.is_file():
-            retry_rc = _retry_mismatches(
-                mismatches,
-                script_path,
-                use_user_flag=use_user_flag,
-                final_installed=final_installed,
+    inputs_detail: dict[str, object] = {
+        "requested_packages": list(packages),
+        "normalized_packages": list(package_list),
+        "use_user_flag": use_user_flag,
+        "repo_parent_root": str(repo_parent_root),
+        "published_versions": _json_ready(dict(published_versions)),
+        "published_artifacts": _json_ready(dict(published_artifacts)),
+    }
+    execution_detail: dict[str, object] = {
+        "script_path": str(script_path),
+        "script_available": script_path.is_file(),
+    }
+    result_detail: dict[str, object] = {}
+    report_payload: dict[str, object] = {
+        "run_id": run_id,
+        "started_at": isoformat_timestamp(start_time),
+        "inputs": inputs_detail,
+        "execution": execution_detail,
+        "result": result_detail,
+    }
+    status = "success"
+    report_path: Path | None = None
+    caught_exc: Exception | None = None
+    try:
+        if not package_list:
+            _info("No published packages to update; skipping pip-updates step")
+            result_detail.update(
+                {
+                    "status": "skipped",
+                    "reason": "no packages after normalization",
+                }
             )
         else:
-            _info("Retrying mismatches with pinned fallback pip install")
-            _fallback_pip_install(
-                [pkg for pkg, _, _ in mismatches],
-                published_versions,
-                use_user_flag=use_user_flag,
-            )
-            final_installed.update(_get_installed_versions(package_list))
-            retry_rc = 0
+            used_script = False
+            script_rc: int | None = None
+            script_detail: dict[str, object] = {
+                "invoked": False,
+                "return_code": None,
+            }
+            if script_path.is_file():
+                used_script, script_rc = _try_run_updates_script(
+                    pip_updates_factory,
+                    package_list,
+                    ctx=ctx,
+                    use_user_flag=use_user_flag,
+                )
+                script_detail = {
+                    "invoked": used_script,
+                    "return_code": script_rc,
+                }
+            else:
+                _info("pip-updates script not found; using direct pip fallback installation")
+            execution_detail["script_attempt"] = script_detail
 
-    _print_summary(published_versions, final_installed, package_list, retry_rc)
-    _perform_post_install_verification(package_list, published_artifacts)
+            pinned = [
+                f"{pkg}=={published_versions[pkg]}"
+                for pkg in package_list
+                if published_versions.get(pkg)
+            ]
+            loose = [pkg for pkg in package_list if not published_versions.get(pkg)]
+
+            used_fallback = (not used_script) or (script_rc not in (None, 0))
+            fallback_detail: dict[str, object] = {
+                "invoked": used_fallback,
+                "pinned": pinned,
+                "loose": loose,
+            }
+            if used_fallback:
+                _fallback_pip_install(
+                    package_list,
+                    published_versions,
+                    use_user_flag=use_user_flag,
+                )
+            execution_detail["fallback"] = fallback_detail
+
+            initial_installed = _get_installed_versions(package_list)
+            mismatches = _collect_mismatches(published_versions, initial_installed)
+            final_installed = dict(initial_installed)
+            retry_rc: int | None = None
+            mismatch_entries: list[dict[str, object]] = [
+                {
+                    "package": pkg,
+                    "expected": expected,
+                    "observed": observed,
+                }
+                for pkg, expected, observed in mismatches
+            ]
+
+            if mismatches:
+                if used_script and not used_fallback and script_path.is_file():
+                    retry_rc = _retry_mismatches(
+                        mismatches,
+                        script_path,
+                        use_user_flag=use_user_flag,
+                        final_installed=final_installed,
+                    )
+                    execution_detail["retry"] = {
+                        "mode": "script",
+                        "return_code": retry_rc,
+                        "packages": [entry["package"] for entry in mismatch_entries],
+                    }
+                else:
+                    _info("Retrying mismatches with pinned fallback pip install")
+                    _fallback_pip_install(
+                        [pkg for pkg, _, _ in mismatches],
+                        published_versions,
+                        use_user_flag=use_user_flag,
+                    )
+                    final_installed.update(_get_installed_versions(package_list))
+                    retry_rc = 0
+                    execution_detail["retry"] = {
+                        "mode": "fallback",
+                        "return_code": retry_rc,
+                        "packages": [entry["package"] for entry in mismatch_entries],
+                    }
+
+            any_failures = _print_summary(
+                published_versions,
+                final_installed,
+                package_list,
+                retry_rc,
+            )
+            verification_detail = _perform_post_install_verification(
+                package_list,
+                published_artifacts,
+            )
+
+            result_detail.update(
+                {
+                    "status": "completed" if not any_failures else "attention",
+                    "script_return_code": script_rc,
+                    "used_script": used_script,
+                    "fallback_used": used_fallback,
+                    "retry_return_code": retry_rc,
+                    "any_failures": any_failures,
+                    "initial_versions": _json_ready(dict(initial_installed)),
+                    "final_versions": _json_ready(dict(final_installed)),
+                    "mismatches": mismatch_entries,
+                    "verification": verification_detail,
+                }
+            )
+    except Exception as exc:
+        status = "error"
+        report_payload.setdefault("errors", [])
+        errors_list = cast("list[object]", report_payload["errors"])
+        errors_list.append(
+            {
+                "type": type(exc).__name__,
+                "message": str(exc),
+            }
+        )
+        caught_exc = exc
+        raise
+    finally:
+        end_time = datetime.now(UTC)
+        report_payload["status"] = status
+        report_payload["completed_at"] = isoformat_timestamp(end_time)
+        report_payload["duration_seconds"] = round(
+            (end_time - start_time).total_seconds(),
+            3,
+        )
+        report_path = write_run_report(
+            "x_make_pip_updates_x",
+            report_payload,
+            base_dir=PACKAGE_ROOT,
+        )
+        if caught_exc is not None:
+            caught_exc.run_report_path = report_path
+    return report_path
 
 
 __all__ = [
