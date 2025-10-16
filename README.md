@@ -3,10 +3,10 @@
 > "Dependencies age fast. I keep them fresh, verified, and logged before they ever touch production."
 
 ## Manifesto
-x_make_pip_updates_x automates package audits and upgrades. It compares installed versus requested versions, enforces hash verification, and surfaces dependency graphs so the Road to 0.20.3 stack never goes stale.
+x_make_pip_updates_x automates package audits and upgrades. It compares installed versus requested versions, enforces hash verification, and surfaces dependency graphs so the Road to 0.20.4 stack never goes stale.
 
-## 0.20.3 Command Sequence
-Version 0.20.3 folds upgrade evidence into the JSON ledger. Every dependency move now emits diagnostics that link back to the visitor's per-file telemetry and the orchestrator snapshots.
+## 0.20.4 Command Sequence
+Version 0.20.4 feeds the propagation column in the new Kanban layout. Upgrade runs now register their JSON ledgers with the orchestrator summary so the Pip Package Propagation checkpoint reports the exact batches, retries, and failures without an operator lifting a finger.
 
 ## Ingredients
 - Python 3.11+
@@ -31,7 +31,7 @@ Version 0.20.3 folds upgrade evidence into the JSON ledger. Every dependency mov
 
 ## Distribution Chain
 - [Changelog](./CHANGELOG.md)
-- [Road to 0.20.3 Control Room Ledger](../x_0_make_all_x/Change%20Control/0.20.3/Road%20to%200.20.3%20Engineering%20Proposal.md)
+- [Road to 0.20.4 Engineering Proposal](../x_0_make_all_x/Change%20Control/0.20.4/Road%20to%200.20.4%20Engineering%20Proposal.md)
 - [Road to 0.20.3 Engineering Proposal](../x_0_make_all_x/Change%20Control/0.20.3/Road%20to%200.20.3%20Engineering%20Proposal.md)
 
 ## Cross-Linked Intelligence

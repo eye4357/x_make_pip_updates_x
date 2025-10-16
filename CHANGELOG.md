@@ -2,6 +2,11 @@
 
 All notable changes to x_make_pip_updates_x are recorded here. We follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) guidance and Semantic Versioning so upgrades never arrive unannounced.
 
+## [0.20.4] - 2025-10-15
+### Changed
+- Documented the Kanban propagation column hookup: upgrade ledgers now register with the orchestrator summary and surface in the Road to 0.20.4 evidence trail.
+- README refreshed to steer operators toward the new 0.20.4 board cadence and propagation telemetry expectations.
+
 ## [0.20.3] - 2025-10-14
 ### Changed
 - README and ops guide rewritten to connect upgrade batches to the Road to 0.20.3 JSON telemetry.

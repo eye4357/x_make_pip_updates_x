@@ -307,7 +307,13 @@ if __name__ == "__main__":
     )
     start_time = datetime.now(UTC)
     run_id = uuid.uuid4().hex
-    normalized_packages = list(dict.fromkeys(packages))
+    seen_for_cli: set[str] = set()
+    normalized_packages: list[str] = []
+    for pkg in packages:
+        if pkg in seen_for_cli:
+            continue
+        seen_for_cli.add(pkg)
+        normalized_packages.append(pkg)
     runner = PipUpdatesRunner(user=use_user_flag)
     before_versions = {
         pkg: runner.get_installed_version(pkg) for pkg in normalized_packages
