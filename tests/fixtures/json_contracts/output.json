@@ -1,0 +1,82 @@
+{
+  "run_id": "1659fb1d61f34a18874d87d0d133358f",
+  "started_at": "2025-10-18T02:12:54Z",
+  "inputs": {
+    "requested_packages": [
+      "x_4357_make_py_mod_sideload_x",
+      "x_4357_make_mermaid_x",
+      "x_4357_make_graphviz_x"
+    ],
+    "normalized_packages": [
+      "x_4357_make_py_mod_sideload_x",
+      "x_4357_make_mermaid_x",
+      "x_4357_make_graphviz_x"
+    ],
+    "use_user_flag": false,
+    "repo_parent_root": "C:\\x_runner_x",
+    "published_versions": {
+      "x_4357_make_py_mod_sideload_x": "0.20.3",
+      "x_4357_make_mermaid_x": "0.20.3",
+      "x_4357_make_graphviz_x": "0.20.3"
+    },
+    "published_artifacts": {
+      "x_4357_make_py_mod_sideload_x": {
+        "main": "x_cls_make_py_mod_sideload_x.py",
+        "anc": []
+      },
+      "x_4357_make_mermaid_x": {
+        "main": "x_cls_make_mermaid_x.py",
+        "anc": []
+      },
+      "x_4357_make_graphviz_x": {
+        "main": "x_cls_make_graphviz_x.py",
+        "anc": []
+      }
+    }
+  },
+  "execution": {
+    "script_path": "C:\\x_runner_x\\x_make_pip_updates_x\\x_cls_make_pip_updates_x.py",
+    "script_available": true,
+    "script_attempt": {
+      "invoked": true,
+      "return_code": 0
+    },
+    "fallback": {
+      "invoked": false,
+      "pinned": [
+        "x_4357_make_py_mod_sideload_x==0.20.3",
+        "x_4357_make_mermaid_x==0.20.3",
+        "x_4357_make_graphviz_x==0.20.3"
+      ],
+      "loose": []
+    }
+  },
+  "result": {
+    "status": "completed",
+    "script_return_code": 0,
+    "used_script": true,
+    "fallback_used": false,
+    "retry_return_code": null,
+    "any_failures": false,
+    "initial_versions": {
+      "x_4357_make_py_mod_sideload_x": "0.20.3",
+      "x_4357_make_mermaid_x": "0.20.3",
+      "x_4357_make_graphviz_x": "0.20.3"
+    },
+    "final_versions": {
+      "x_4357_make_py_mod_sideload_x": "0.20.3",
+      "x_4357_make_mermaid_x": "0.20.3",
+      "x_4357_make_graphviz_x": "0.20.3"
+    },
+    "mismatches": [],
+    "verification": {
+      "status": "performed",
+      "detail": "metadata validated; deep verification not implemented"
+    }
+  },
+  "status": "success",
+  "completed_at": "2025-10-18T02:13:29Z",
+  "duration_seconds": 35.151,
+  "tool": "x_make_pip_updates_x",
+  "generated_at": "2025-10-18T02:13:29Z"
+}

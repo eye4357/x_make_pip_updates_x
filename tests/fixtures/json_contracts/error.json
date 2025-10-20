@@ -1,0 +1,8 @@
+{
+  "status": "failure",
+  "message": "pip updates failed",
+  "details": {
+    "package": "x_4357_make_markdown_x",
+    "exit_code": 1
+  }
+}

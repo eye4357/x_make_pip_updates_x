@@ -1,20 +1,19 @@
 from __future__ import annotations
 
+import argparse
 import json
 import logging
 import subprocess
 import sys
-import uuid
 from collections.abc import Iterable, Mapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
-from datetime import UTC, datetime
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _version
 from pathlib import Path
 from typing import cast
 
-from x_make_common_x import isoformat_timestamp, write_run_report
+from x_make_pip_updates_x.update_flow import main_json
 
 _LOGGER = logging.getLogger("x_make")
 _sys = sys
@@ -290,60 +289,27 @@ class PipUpdatesRunner:
 
 x_cls_make_pip_updates_x = PipUpdatesRunner
 
+def _load_json_payload(file_path: str | None) -> Mapping[str, object]:
+    if file_path:
+        with Path(file_path).open("r", encoding="utf-8") as handle:
+            return cast("Mapping[str, object]", json.load(handle))
+    return cast("Mapping[str, object]", json.load(sys.stdin))
+
+
+def _run_json_cli(args: Sequence[str]) -> None:
+    parser = argparse.ArgumentParser(description="x_make_pip_updates_x JSON runner")
+    parser.add_argument("--json", action="store_true", help="Read JSON payload from stdin")
+    parser.add_argument("--json-file", type=str, help="Path to JSON payload file")
+    parsed = parser.parse_args(args)
+
+    if not (parsed.json or parsed.json_file):
+        parser.error("JSON input required. Use --json for stdin or --json-file <path>.")
+
+    payload = _load_json_payload(parsed.json_file if parsed.json_file else None)
+    result = main_json(payload)
+    json.dump(result, sys.stdout, indent=2)
+    sys.stdout.write("\n")
+
 
 if __name__ == "__main__":
-    raw_args = sys.argv[1:]
-    use_user_flag = "--user" in raw_args
-    args = [a for a in raw_args if not a.startswith("-")]
-    packages = (
-        args
-        if args
-        else [
-            "x_4357_make_markdown_x",
-            "x_4357_make_pypi_x",
-            "x_4357_make_github_clones_x",
-            "x_4357_make_pip_updates_x",
-        ]
-    )
-    start_time = datetime.now(UTC)
-    run_id = uuid.uuid4().hex
-    seen_for_cli: set[str] = set()
-    normalized_packages: list[str] = []
-    for pkg in packages:
-        if pkg in seen_for_cli:
-            continue
-        seen_for_cli.add(pkg)
-        normalized_packages.append(pkg)
-    runner = PipUpdatesRunner(user=use_user_flag)
-    before_versions = {
-        pkg: runner.get_installed_version(pkg) for pkg in normalized_packages
-    }
-    exit_code = runner.batch_install(normalized_packages, use_user=use_user_flag)
-    after_versions = {
-        pkg: runner.get_installed_version(pkg) for pkg in normalized_packages
-    }
-    end_time = datetime.now(UTC)
-    payload: dict[str, object] = {
-        "run_id": run_id,
-        "started_at": isoformat_timestamp(start_time),
-        "completed_at": isoformat_timestamp(end_time),
-        "duration_seconds": round((end_time - start_time).total_seconds(), 3),
-        "invocation": {
-            "argv": raw_args,
-            "normalized_packages": normalized_packages,
-            "use_user": use_user_flag,
-            "python_executable": sys.executable,
-            "working_directory": str(Path.cwd()),
-        },
-        "results": [
-            {
-                "package": pkg,
-                "previous_version": before_versions.get(pkg),
-                "current_version": after_versions.get(pkg),
-            }
-            for pkg in normalized_packages
-        ],
-        "exit_code": exit_code,
-    }
-    write_run_report("x_make_pip_updates_x", payload, base_dir=PACKAGE_ROOT)
-    sys.exit(exit_code)
+    _run_json_cli(sys.argv[1:])

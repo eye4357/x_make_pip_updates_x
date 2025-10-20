@@ -1,0 +1,40 @@
+{
+  "command": "x_make_pip_updates_x",
+  "parameters": {
+    "packages": [
+      "x_4357_make_markdown_x",
+      "x_4357_make_persistent_env_var_x",
+      "x_4357_make_pip_updates_x"
+    ],
+    "repo_parent_root": "C:\\x_runner_x",
+    "published_versions": {
+      "x_4357_make_markdown_x": "0.20.3",
+      "x_4357_make_persistent_env_var_x": "0.20.3",
+      "x_4357_make_pip_updates_x": "0.20.3"
+    },
+    "published_artifacts": {
+      "x_4357_make_markdown_x": {
+        "main": "x_cls_make_markdown_x.py",
+        "anc": []
+      },
+      "x_4357_make_persistent_env_var_x": {
+        "main": "x_cls_make_persistent_env_var_x.py",
+        "anc": []
+      },
+      "x_4357_make_pip_updates_x": {
+        "main": "x_cls_make_pip_updates_x.py",
+        "anc": []
+      }
+    },
+    "context": {
+      "dry_run": false,
+      "verbose": true,
+      "publish_opts": {
+        "use_user": false
+      }
+    },
+    "cloner": {
+      "target_dir": "C:\\x_runner_x\\repos"
+    }
+  }
+}
