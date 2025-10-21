@@ -289,6 +289,7 @@ class PipUpdatesRunner:
 
 x_cls_make_pip_updates_x = PipUpdatesRunner
 
+
 def _load_json_payload(file_path: str | None) -> Mapping[str, object]:
     if file_path:
         with Path(file_path).open("r", encoding="utf-8") as handle:
@@ -298,7 +299,9 @@ def _load_json_payload(file_path: str | None) -> Mapping[str, object]:
 
 def _run_json_cli(args: Sequence[str]) -> None:
     parser = argparse.ArgumentParser(description="x_make_pip_updates_x JSON runner")
-    parser.add_argument("--json", action="store_true", help="Read JSON payload from stdin")
+    parser.add_argument(
+        "--json", action="store_true", help="Read JSON payload from stdin"
+    )
     parser.add_argument("--json-file", type=str, help="Path to JSON payload file")
     parsed = parser.parse_args(args)
 

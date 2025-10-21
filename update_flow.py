@@ -656,7 +656,9 @@ def main_json(
         cloner_obj = SimpleNamespace()
 
     class _NoopRunner(PipUpdatesRunnerProtocol):
-        def batch_install(self, packages: Sequence[str], *, use_user: bool) -> int:  # noqa: ARG002
+        def batch_install(
+            self, packages: Sequence[str], *, use_user: bool
+        ) -> int:
             return 0
 
     def _default_factory(*_args: object, **_kwargs: object) -> PipUpdatesRunnerProtocol:
