@@ -10,10 +10,10 @@ from collections.abc import Iterable, Mapping, Sequence
 from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
-from types import SimpleNamespace
+from types import MappingProxyType, SimpleNamespace
 from typing import NamedTuple, Protocol, cast
 
-from jsonschema import ValidationError  # type: ignore[import-untyped]
+from jsonschema import ValidationError
 from x_make_common_x import (
     CommandError,
     isoformat_timestamp,
@@ -29,6 +29,10 @@ from x_make_pip_updates_x.json_contracts import (
     INPUT_SCHEMA,
     OUTPUT_SCHEMA,
 )
+
+ValidationErrorType = cast("type[Exception]", ValidationError)
+
+_EMPTY_MAPPING: Mapping[str, object] = MappingProxyType({})
 
 
 class PipUpdatesRunnerProtocol(Protocol):
@@ -65,11 +69,9 @@ def _json_ready(value: object) -> object:
     if isinstance(value, Path):
         return str(value)
     if isinstance(value, Mapping):
-        typed = cast("Mapping[object, object]", value)
-        return {str(key): _json_ready(val) for key, val in typed.items()}
+        return {str(key): _json_ready(val) for key, val in value.items()}
     if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
-        typed_seq = cast("Sequence[object]", value)
-        return [_json_ready(entry) for entry in typed_seq]
+        return [_json_ready(entry) for entry in value]
     return str(value)
 
 
@@ -81,7 +83,7 @@ def _base_path_from_cloner(cloner: object, repo_parent_root: str) -> Path:
             return Path(target_attr)
     if isinstance(target_attr, os.PathLike):
         with suppress(TypeError, ValueError):
-            return Path(os.fspath(cast("os.PathLike[str]", target_attr)))
+            return Path(os.fspath(target_attr))
     return base_path
 
 
@@ -123,13 +125,12 @@ def _normalize_packages(packages: Sequence[str]) -> list[str]:
 def _override_use_user_flag(ctx: object | None, *, default: bool) -> bool:
     publish_opts: object | None = None
     if isinstance(ctx, Mapping):
-        publish_opts = cast("Mapping[str, object]", ctx).get("publish_opts")
+        publish_opts = ctx.get("publish_opts")
     elif ctx is not None:
         publish_opts = getattr(ctx, "publish_opts", None)
 
     if isinstance(publish_opts, Mapping):
-        typed = cast("Mapping[str, object]", publish_opts)
-        override = typed.get("use_user")
+        override = publish_opts.get("use_user")
         if isinstance(override, bool):
             return override
         if isinstance(override, str):
@@ -168,6 +169,7 @@ def _try_run_updates_script(
     ctx: object | None,
     use_user_flag: bool,
 ) -> tuple[bool, int | None]:
+    result: dict[str, object]
     try:
         runner = _instantiate_runner(
             pip_updates_cls,
@@ -551,14 +553,14 @@ def run_updates_for_packages(  # noqa: PLR0913
             result_detail.update(result_updates)
     except Exception as exc:
         status = "error"
-        report_payload.setdefault("errors", [])
-        errors_list = cast("list[object]", report_payload["errors"])
-        errors_list.append(
-            {
-                "type": type(exc).__name__,
-                "message": str(exc),
-            }
-        )
+        errors_entry = report_payload.setdefault("errors", [])
+        if isinstance(errors_entry, list):
+            errors_entry.append(
+                {
+                    "type": type(exc).__name__,
+                    "message": str(exc),
+                }
+            )
         caught_exc = exc
         raise
     finally:
@@ -577,10 +579,9 @@ def run_updates_for_packages(  # noqa: PLR0913
         if caught_exc is not None:
             # Preserve the report location for upstream error handling without
             # introducing dynamic attributes that static analyzers reject.
-            exc_dict_raw = cast("object | None", getattr(caught_exc, "__dict__", None))
+            exc_dict_raw = getattr(caught_exc, "__dict__", None)
             if isinstance(exc_dict_raw, dict):
-                typed_exc_dict = cast("dict[str, object]", exc_dict_raw)
-                typed_exc_dict["run_report_path"] = report_path
+                exc_dict_raw["run_report_path"] = report_path
     return report_path
 
 
@@ -595,11 +596,59 @@ def _failure_payload(
     }
     if details:
         payload["details"] = dict(details)
-    try:
+    with suppress(ValidationErrorType):
         validate_payload(payload, ERROR_SCHEMA)
-    except ValidationError:
-        pass
     return payload
+
+
+def _parameters_from_payload(payload: Mapping[str, object]) -> Mapping[str, object]:
+    parameters_obj = payload.get("parameters", {})
+    if isinstance(parameters_obj, Mapping):
+        return cast("Mapping[str, object]", parameters_obj)
+    return _EMPTY_MAPPING
+
+
+def _coerce_packages(value: object) -> tuple[str, ...]:
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        return tuple(str(entry) for entry in value if str(entry))
+    return ()
+
+
+def _coerce_published_versions(value: object) -> dict[str, str | None]:
+    if not isinstance(value, Mapping):
+        return {}
+    result: dict[str, str | None] = {}
+    for key, entry in value.items():
+        coerced = entry if isinstance(entry, str) and entry else None
+        result[str(key)] = coerced
+    return result
+
+
+def _coerce_published_artifacts(value: object) -> dict[str, Mapping[str, object]]:
+    if not isinstance(value, Mapping):
+        return {}
+    result: dict[str, Mapping[str, object]] = {}
+    for key, entry in value.items():
+        if isinstance(entry, Mapping):
+            result[str(key)] = dict(entry)
+    return result
+
+
+def _resolve_effective_ctx(
+    ctx: object | None,
+    context_obj: object,
+) -> object | None:
+    if ctx is not None:
+        return ctx
+    if isinstance(context_obj, Mapping):
+        return dict(context_obj)
+    return None
+
+
+def _build_cloner(source: object) -> SimpleNamespace:
+    if isinstance(source, Mapping):
+        return SimpleNamespace(**dict(source))
+    return SimpleNamespace()
 
 
 def main_json(
@@ -622,8 +671,8 @@ def main_json(
             },
         )
 
-    parameters = cast("Mapping[str, object]", payload.get("parameters", {}))
-    packages = cast("Sequence[str]", parameters.get("packages", ()))
+    parameters = _parameters_from_payload(payload)
+    packages = _coerce_packages(parameters.get("packages"))
     repo_parent_root_obj = parameters.get("repo_parent_root", "")
     if not isinstance(repo_parent_root_obj, str) or not repo_parent_root_obj:
         return _failure_payload(
@@ -631,29 +680,17 @@ def main_json(
             details={"field": "repo_parent_root"},
         )
 
-    published_versions = cast(
-        "Mapping[str, str | None]",
-        parameters.get("published_versions", {}),
+    published_versions = _coerce_published_versions(
+        parameters.get("published_versions", {})
     )
-    published_artifacts = cast(
-        "Mapping[str, Mapping[str, object]]",
-        parameters.get("published_artifacts", {}),
+    published_artifacts = _coerce_published_artifacts(
+        parameters.get("published_artifacts", {})
     )
 
     context_obj = parameters.get("context")
-    effective_ctx: object | None
-    if ctx is not None:
-        effective_ctx = ctx
-    elif isinstance(context_obj, Mapping):
-        effective_ctx = dict(context_obj)
-    else:
-        effective_ctx = None
+    effective_ctx = _resolve_effective_ctx(ctx, context_obj)
 
-    cloner_obj_raw = parameters.get("cloner")
-    if isinstance(cloner_obj_raw, Mapping):
-        cloner_obj = SimpleNamespace(**dict(cloner_obj_raw))
-    else:
-        cloner_obj = SimpleNamespace()
+    cloner_obj = _build_cloner(parameters.get("cloner"))
 
     class _NoopRunner(PipUpdatesRunnerProtocol):
         def batch_install(
@@ -687,11 +724,19 @@ def main_json(
 
     try:
         with report_path.open("r", encoding="utf-8") as handle:
-            result = cast("dict[str, object]", json.load(handle))
+            loaded_obj: object = json.load(handle)
+            if not isinstance(loaded_obj, Mapping):
+                raise TypeError("pip updates report must be a mapping")
+            result = dict(loaded_obj)
     except FileNotFoundError:
         return _failure_payload(
             "pip updates report not found",
             details={"report_path": str(report_path)},
+        )
+    except TypeError as exc:
+        return _failure_payload(
+            "pip updates report malformed",
+            details={"message": str(exc)},
         )
 
     try:
