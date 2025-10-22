@@ -32,7 +32,7 @@ from x_make_pip_updates_x.json_contracts import (
 
 ValidationErrorType = cast("type[Exception]", ValidationError)
 
-_EMPTY_MAPPING: Mapping[str, object] = MappingProxyType({})
+_EMPTY_MAPPING: Mapping[str, object] = MappingProxyType(cast("dict[str, object]", {}))
 
 
 class PipUpdatesRunnerProtocol(Protocol):
@@ -601,9 +601,10 @@ def _failure_payload(
 
 
 def _parameters_from_payload(payload: Mapping[str, object]) -> Mapping[str, object]:
-    parameters_obj = payload.get("parameters", {})
+    parameters_obj = payload.get("parameters")
     if isinstance(parameters_obj, Mapping):
-        return cast("Mapping[str, object]", parameters_obj)
+        typed_parameters = cast("Mapping[str, object]", parameters_obj)
+        return MappingProxyType(dict(typed_parameters))
     return _EMPTY_MAPPING
 
 
@@ -629,7 +630,8 @@ def _coerce_published_artifacts(value: object) -> dict[str, Mapping[str, object]
     result: dict[str, Mapping[str, object]] = {}
     for key, entry in value.items():
         if isinstance(entry, Mapping):
-            result[str(key)] = dict(entry)
+            typed_entry = cast("Mapping[str, object]", entry)
+            result[str(key)] = dict(typed_entry)
     return result
 
 
@@ -658,10 +660,13 @@ def main_json(
 ) -> dict[str, object]:
     """Execute the pip updates flow using the JSON contract."""
 
+    error_response: dict[str, object] | None = None
+    result_payload: dict[str, object] | None = None
+
     try:
         validate_payload(payload, INPUT_SCHEMA)
     except ValidationError as exc:
-        return _failure_payload(
+        error_response = _failure_payload(
             "input payload failed validation",
             details={
                 "error": exc.message,
@@ -672,18 +677,21 @@ def main_json(
 
     parameters = _parameters_from_payload(payload)
     packages = _coerce_packages(parameters.get("packages"))
-    repo_parent_root_obj = parameters.get("repo_parent_root", "")
-    if not isinstance(repo_parent_root_obj, str) or not repo_parent_root_obj:
-        return _failure_payload(
+    repo_parent_root_obj = parameters.get("repo_parent_root")
+    repo_parent_root: str | None = None
+    if isinstance(repo_parent_root_obj, str) and repo_parent_root_obj:
+        repo_parent_root = repo_parent_root_obj
+    elif error_response is None:
+        error_response = _failure_payload(
             "repo_parent_root is required",
             details={"field": "repo_parent_root"},
         )
 
     published_versions = _coerce_published_versions(
-        parameters.get("published_versions", {})
+        parameters.get("published_versions")
     )
     published_artifacts = _coerce_published_artifacts(
-        parameters.get("published_artifacts", {})
+        parameters.get("published_artifacts")
     )
 
     context_obj = parameters.get("context")
@@ -692,9 +700,8 @@ def main_json(
     cloner_obj = _build_cloner(parameters.get("cloner"))
 
     class _NoopRunner(PipUpdatesRunnerProtocol):
-        def batch_install(
-            self, packages: Sequence[str], *, use_user: bool
-        ) -> int:
+        def batch_install(self, packages: Sequence[str], *, use_user: bool) -> int:
+            del packages, use_user
             return 0
 
     def _default_factory(*_args: object, **_kwargs: object) -> PipUpdatesRunnerProtocol:
@@ -702,55 +709,66 @@ def main_json(
 
     factory = pip_updates_factory or _default_factory
 
-    try:
-        report_path = run_updates_for_packages(
-            packages,
-            cloner=cloner_obj,
-            ctx=effective_ctx,
-            repo_parent_root=repo_parent_root_obj,
-            published_versions=published_versions,
-            published_artifacts=published_artifacts,
-            pip_updates_factory=factory,
-        )
-    except Exception as exc:  # noqa: BLE001 - convert to schema failure payload
-        return _failure_payload(
-            "pip updates execution failed",
-            details={
-                "type": type(exc).__name__,
-                "message": str(exc),
-            },
-        )
+    report_path: Path | None = None
 
-    try:
-        with report_path.open("r", encoding="utf-8") as handle:
-            loaded_obj: object = json.load(handle)
+    if error_response is None and repo_parent_root is not None:
+        try:
+            report_path = run_updates_for_packages(
+                packages,
+                cloner=cloner_obj,
+                ctx=effective_ctx,
+                repo_parent_root=repo_parent_root,
+                published_versions=published_versions,
+                published_artifacts=published_artifacts,
+                pip_updates_factory=factory,
+            )
+        except Exception as exc:  # noqa: BLE001 - convert to schema failure payload
+            error_response = _failure_payload(
+                "pip updates execution failed",
+                details={
+                    "type": type(exc).__name__,
+                    "message": str(exc),
+                },
+            )
+
+    if error_response is None and report_path is not None:
+        try:
+            with report_path.open("r", encoding="utf-8") as handle:
+                loaded_obj: object = json.load(handle)
             if not isinstance(loaded_obj, Mapping):
-                raise TypeError("pip updates report must be a mapping")
-            result = dict(loaded_obj)
-    except FileNotFoundError:
-        return _failure_payload(
-            "pip updates report not found",
-            details={"report_path": str(report_path)},
-        )
-    except TypeError as exc:
-        return _failure_payload(
-            "pip updates report malformed",
-            details={"message": str(exc)},
-        )
+                message = "pip updates report must be a mapping"
+                raise TypeError(message)
+            typed_loaded = cast("Mapping[str, object]", loaded_obj)
+            result_payload = dict(typed_loaded)
+        except FileNotFoundError:
+            error_response = _failure_payload(
+                "pip updates report not found",
+                details={"report_path": str(report_path)},
+            )
+        except TypeError as exc:
+            error_response = _failure_payload(
+                "pip updates report malformed",
+                details={"message": str(exc)},
+            )
 
-    try:
-        validate_payload(result, OUTPUT_SCHEMA)
-    except ValidationError as exc:
-        return _failure_payload(
-            "generated output failed schema validation",
-            details={
-                "error": exc.message,
-                "path": [str(part) for part in exc.path],
-                "schema_path": [str(part) for part in exc.schema_path],
-            },
-        )
+    if error_response is None and result_payload is not None:
+        try:
+            validate_payload(result_payload, OUTPUT_SCHEMA)
+        except ValidationError as exc:
+            error_response = _failure_payload(
+                "generated output failed schema validation",
+                details={
+                    "error": exc.message,
+                    "path": [str(part) for part in exc.path],
+                    "schema_path": [str(part) for part in exc.schema_path],
+                },
+            )
 
-    return result
+    if error_response is not None:
+        return error_response
+    if result_payload is None:
+        return _failure_payload("pip updates report missing", details=None)
+    return result_payload
 
 
 __all__ = [

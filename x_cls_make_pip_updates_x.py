@@ -11,7 +11,8 @@ from dataclasses import dataclass
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _version
 from pathlib import Path
-from typing import cast
+from types import MappingProxyType
+from typing import IO, cast
 
 from x_make_pip_updates_x.update_flow import main_json
 
@@ -291,10 +292,18 @@ x_cls_make_pip_updates_x = PipUpdatesRunner
 
 
 def _load_json_payload(file_path: str | None) -> Mapping[str, object]:
+    def _load(stream: IO[str]) -> Mapping[str, object]:
+        payload_obj: object = json.load(stream)
+        if not isinstance(payload_obj, Mapping):
+            message = "JSON payload must be a mapping"
+            raise TypeError(message)
+        typed_payload = cast("Mapping[str, object]", payload_obj)
+        return MappingProxyType(dict(typed_payload))
+
     if file_path:
         with Path(file_path).open("r", encoding="utf-8") as handle:
-            return cast("Mapping[str, object]", json.load(handle))
-    return cast("Mapping[str, object]", json.load(sys.stdin))
+            return _load(handle)
+    return _load(sys.stdin)
 
 
 def _run_json_cli(args: Sequence[str]) -> None:
