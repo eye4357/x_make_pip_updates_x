@@ -3,7 +3,9 @@ from __future__ import annotations
 # ruff: noqa: S101 - assertions express expectations in test cases
 import copy
 import json
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 from x_make_common_x.json_contracts import validate_payload, validate_schema
@@ -15,26 +17,35 @@ from x_make_pip_updates_x.json_contracts import (
 )
 from x_make_pip_updates_x.update_flow import main_json
 
+pytest = cast("Any", pytest)
+fixture = cast("Callable[..., Any]", pytest.fixture)
+
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "json_contracts"
 REPORTS_DIR = Path(__file__).resolve().parents[1] / "reports"
 
 
-@pytest.fixture(scope="module")
+@fixture(scope="module")
 def sample_input() -> dict[str, object]:
-    with (FIXTURE_DIR / "input.json").open("r", encoding="utf-8") as handle:
-        return json.load(handle)
+    path = FIXTURE_DIR / "input.json"
+    with path.open("r", encoding="utf-8") as handle:
+        data = json.load(handle)
+    return cast("dict[str, object]", data)
 
 
-@pytest.fixture(scope="module")
+@fixture(scope="module")
 def sample_output() -> dict[str, object]:
-    with (FIXTURE_DIR / "output.json").open("r", encoding="utf-8") as handle:
-        return json.load(handle)
+    path = FIXTURE_DIR / "output.json"
+    with path.open("r", encoding="utf-8") as handle:
+        data = json.load(handle)
+    return cast("dict[str, object]", data)
 
 
-@pytest.fixture(scope="module")
+@fixture(scope="module")
 def sample_error() -> dict[str, object]:
-    with (FIXTURE_DIR / "error.json").open("r", encoding="utf-8") as handle:
-        return json.load(handle)
+    path = FIXTURE_DIR / "error.json"
+    with path.open("r", encoding="utf-8") as handle:
+        data = json.load(handle)
+    return cast("dict[str, object]", data)
 
 
 def test_schemas_are_valid() -> None:

@@ -169,7 +169,6 @@ def _try_run_updates_script(
     ctx: object | None,
     use_user_flag: bool,
 ) -> tuple[bool, int | None]:
-    result: dict[str, object]
     try:
         runner = _instantiate_runner(
             pip_updates_cls,
