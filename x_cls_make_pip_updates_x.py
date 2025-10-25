@@ -297,8 +297,11 @@ def _load_json_payload(file_path: str | None) -> Mapping[str, object]:
         if not isinstance(payload_obj, Mapping):
             message = "JSON payload must be a mapping"
             raise TypeError(message)
-        typed_payload = cast("Mapping[str, object]", payload_obj)
-        return MappingProxyType(dict(typed_payload))
+        typed_payload = cast("Mapping[object, object]", payload_obj)
+        sanitized: dict[str, object] = {
+            key: value for key, value in typed_payload.items() if isinstance(key, str)
+        }
+        return MappingProxyType(sanitized)
 
     if file_path:
         with Path(file_path).open("r", encoding="utf-8") as handle:
@@ -312,12 +315,16 @@ def _run_json_cli(args: Sequence[str]) -> None:
         "--json", action="store_true", help="Read JSON payload from stdin"
     )
     parser.add_argument("--json-file", type=str, help="Path to JSON payload file")
-    parsed = parser.parse_args(args)
+    parsed: argparse.Namespace = parser.parse_args(args)
+    json_attr = cast("object", getattr(parsed, "json", False))
+    json_flag = bool(json_attr)
+    json_file_attr = cast("object", getattr(parsed, "json_file", None))
+    json_file: str | None = json_file_attr if isinstance(json_file_attr, str) else None
 
-    if not (parsed.json or parsed.json_file):
+    if not (json_flag or json_file):
         parser.error("JSON input required. Use --json for stdin or --json-file <path>.")
 
-    payload = _load_json_payload(parsed.json_file if parsed.json_file else None)
+    payload = _load_json_payload(json_file)
     result = main_json(payload)
     json.dump(result, sys.stdout, indent=2)
     sys.stdout.write("\n")
