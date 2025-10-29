@@ -99,7 +99,45 @@
     "script_path": "C:\\x_runner_x\\x_make_pip_updates_x\\x_cls_make_pip_updates_x.py",
     "script_available": true
   },
-  "result": {},
+  "result": {
+    "status": "completed",
+    "script_return_code": 0,
+    "used_script": true,
+    "fallback_used": false,
+    "retry_return_code": null,
+    "any_failures": false,
+    "initial_versions": {
+      "x_4357_make_py_mod_sideload_x": "0.20.4",
+      "x_4357_make_mermaid_x": "0.20.4",
+      "x_4357_make_graphviz_x": "0.20.4",
+      "x_4357_make_yahw_x": "0.20.4",
+      "x_4357_make_markdown_x": "0.20.4",
+      "x_4357_make_persistent_env_var_x": "0.20.4",
+      "x_4357_make_pypi_x": "0.20.4",
+      "x_4357_make_github_clones_x": "0.20.4",
+      "x_4357_make_pip_updates_x": "0.20.4",
+      "x_4357_make_common_x": "0.20.4",
+      "x_4357_make_github_visitor_x": "0.20.4"
+    },
+    "final_versions": {
+      "x_4357_make_py_mod_sideload_x": "0.20.4",
+      "x_4357_make_mermaid_x": "0.20.4",
+      "x_4357_make_graphviz_x": "0.20.4",
+      "x_4357_make_yahw_x": "0.20.4",
+      "x_4357_make_markdown_x": "0.20.4",
+      "x_4357_make_persistent_env_var_x": "0.20.4",
+      "x_4357_make_pypi_x": "0.20.4",
+      "x_4357_make_github_clones_x": "0.20.4",
+      "x_4357_make_pip_updates_x": "0.20.4",
+      "x_4357_make_common_x": "0.20.4",
+      "x_4357_make_github_visitor_x": "0.20.4"
+    },
+    "mismatches": [],
+    "verification": {
+      "status": "performed",
+      "detail": "metadata validated; deep verification not implemented"
+    }
+  },
   "status": "success",
   "completed_at": "2025-10-26T01:15:14Z",
   "duration_seconds": 23.66,

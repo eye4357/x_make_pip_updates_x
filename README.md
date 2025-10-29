@@ -7,6 +7,7 @@ This refinery keeps the lab’s Python stack current without gambling on unverif
 - Force reinstall packages with hash verification and JSON ledgers so auditors know exactly what changed.
 - Integrate optional `pip-audit`, `pip-tools`, and graph analysis when the release warrants deeper scrutiny.
 - Feed the orchestrator’s propagation stage with deterministic evidence of each upgrade wave.
+- Continuously validate archived JSON ledgers so historical evidence keeps passing schema audits.
 
 ## Instrumentation
 - Python 3.11 or newer.

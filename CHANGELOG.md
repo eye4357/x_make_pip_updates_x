@@ -2,6 +2,10 @@
 
 I record every significant change to this dependency refinery here. Entries follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and Semantic Versioning so upgrade evidence maps cleanly to release history.
 
+## [Unreleased]
+### Fixed
+- Sanitised the 2025-10-26 upgrade ledger so the archived `result` payload matches the published schema and keeps historical evidence valid during regression sweeps.
+
 ## [0.20.4] - 2025-10-15
 ### Changed
 - Documented the Kanban propagation column hookup: upgrade ledgers now register with the orchestrator summary and surface in the Road to 0.20.4 evidence trail.
