@@ -32,18 +32,8 @@ Select the desired run mode—dry-run, force reinstall, audit—and capture the 
 | Static contract scan | `python -m pyright` |
 | Functional verification | `pytest` |
 
-## System Linkage
-- [Changelog](./CHANGELOG.md)
-- [Road to 0.20.4 Engineering Proposal](../x_0_make_all_x/Change%20Control/0.20.4/Road%20to%200.20.4%20Engineering%20Proposal.md)
-- [Road to 0.20.3 Engineering Proposal](../x_0_make_all_x/Change%20Control/0.20.3/Road%20to%200.20.3%20Engineering%20Proposal.md)
-
 ## Reconstitution Drill
 During the monthly rebuild I execute a forced reinstall sweep on a fresh lab machine, log hashes, runtime, pip version, and ensure the orchestrator records the propagation evidence. Any anomaly leads straight to a Change Control entry and corrective patch.
-
-## Cross-Referenced Assets
-- [x_make_pypi_x](../x_make_pypi_x/README.md) — consumes upgrade ledgers before publication.
-- [x_make_common_x](../x_make_common_x/README.md) — supplies logging and subprocess harnesses for pip commands.
-- [x_make_github_visitor_x](../x_make_github_visitor_x/README.md) — validates repositories after upgrade waves conclude.
 
 ## Conduct Code
 Every dependency shift must include before/after versions, hashes, and remediation notes in Change Control. If verification fails, halt the run—uncertainty is more toxic than delay.

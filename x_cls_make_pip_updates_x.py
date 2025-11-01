@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import subprocess
 import sys
 from collections.abc import Iterable, Mapping, Sequence
 from contextlib import suppress
@@ -13,6 +12,8 @@ from importlib.metadata import version as _version
 from pathlib import Path
 from types import MappingProxyType
 from typing import IO, cast
+
+from x_make_common_x import CommandError, run_command
 
 from x_make_pip_updates_x.update_flow import main_json
 
@@ -146,25 +147,25 @@ class PipUpdatesRunner:
         if self._ctx_flag(self._ctx, "verbose"):
             _info(f"[pip_updates] initialized user={self.user}")
 
-    @staticmethod
-    def _run(cmd: list[str]) -> RunResult:
-        cp = subprocess.run(  # noqa: S603
-            cmd,
-            text=True,
-            capture_output=True,
-            check=False,
-        )
-        stdout = cp.stdout or ""
-        stderr = cp.stderr or ""
-        return cp.returncode, stdout, stderr
+    def _run_and_report(self, cmd: Sequence[str], *, check: bool = True) -> RunResult:
+        try:
+            result = run_command(list(cmd), check=check)
+        except CommandError as exc:
+            stdout = exc.stdout or ""
+            stderr = exc.stderr or ""
+            if stdout.strip():
+                _info(stdout.strip())
+            if stderr.strip():
+                _error(stderr.strip())
+            return exc.returncode, stdout, stderr
 
-    def _run_and_report(self, cmd: Sequence[str]) -> RunResult:
-        code, out, err = self._run(list(cmd))
-        if out.strip():
-            _info(out.strip())
-        if err.strip() and code != 0:
-            _error(err.strip())
-        return code, out, err
+        stdout = result.stdout or ""
+        stderr = result.stderr or ""
+        if stdout.strip():
+            _info(stdout.strip())
+        if stderr.strip() and result.returncode != 0:
+            _error(stderr.strip())
+        return result.returncode, stdout, stderr
 
     @staticmethod
     def get_installed_version(dist_name: str) -> str | None:
@@ -187,7 +188,7 @@ class PipUpdatesRunner:
             "--format=json",
             "--disable-pip-version-check",
         ]
-        code, out, err = self._run(cmd)
+        code, out, err = self._run_and_report(cmd, check=False)
         if code != 0:
             _error(f"pip list failed ({code}): {err.strip()}")
             return False
