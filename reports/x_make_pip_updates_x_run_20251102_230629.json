@@ -1,0 +1,210 @@
+{
+  "run_id": "135311b417f6421f8aa2ded1446c365a",
+  "started_at": "2025-11-02T23:04:47Z",
+  "inputs": {
+    "requested_packages": [
+      "x_4357_make_py_mod_sideload_x",
+      "x_4357_make_mermaid_x",
+      "x_4357_make_graphviz_x",
+      "x_4357_make_yahw_x",
+      "x_4357_make_markdown_x",
+      "x_4357_make_persistent_env_var_x",
+      "x_4357_make_pypi_x",
+      "x_4357_make_github_clones_x",
+      "x_4357_make_pip_updates_x",
+      "x_4357_make_common_x",
+      "x_4357_make_github_visitor_x",
+      "x_4357_make_cli_scaffolder_x",
+      "x_4357_make_contract_validators_x",
+      "x_4357_make_progress_board_x"
+    ],
+    "normalized_packages": [
+      "x_4357_make_py_mod_sideload_x",
+      "x_4357_make_mermaid_x",
+      "x_4357_make_graphviz_x",
+      "x_4357_make_yahw_x",
+      "x_4357_make_markdown_x",
+      "x_4357_make_persistent_env_var_x",
+      "x_4357_make_pypi_x",
+      "x_4357_make_github_clones_x",
+      "x_4357_make_pip_updates_x",
+      "x_4357_make_common_x",
+      "x_4357_make_github_visitor_x",
+      "x_4357_make_cli_scaffolder_x",
+      "x_4357_make_contract_validators_x",
+      "x_4357_make_progress_board_x"
+    ],
+    "use_user_flag": false,
+    "repo_parent_root": "C:\\x_runner_x",
+    "published_versions": {
+      "x_4357_make_py_mod_sideload_x": "0.20.7",
+      "x_4357_make_mermaid_x": "0.20.7",
+      "x_4357_make_graphviz_x": "0.20.7",
+      "x_4357_make_yahw_x": "0.20.7",
+      "x_4357_make_markdown_x": "0.20.7",
+      "x_4357_make_persistent_env_var_x": "0.20.7",
+      "x_4357_make_pypi_x": "0.20.7",
+      "x_4357_make_github_clones_x": "0.20.7",
+      "x_4357_make_pip_updates_x": "0.20.7",
+      "x_4357_make_common_x": "0.20.7",
+      "x_4357_make_github_visitor_x": "0.20.7",
+      "x_4357_make_cli_scaffolder_x": "0.20.7",
+      "x_4357_make_contract_validators_x": "0.20.7",
+      "x_4357_make_progress_board_x": "0.20.7"
+    },
+    "published_artifacts": {
+      "x_4357_make_py_mod_sideload_x": {
+        "main": "x_cls_make_py_mod_sideload_x.py",
+        "anc": []
+      },
+      "x_4357_make_mermaid_x": {
+        "main": "x_cls_make_mermaid_x.py",
+        "anc": []
+      },
+      "x_4357_make_graphviz_x": {
+        "main": "x_cls_make_graphviz_x.py",
+        "anc": []
+      },
+      "x_4357_make_yahw_x": {
+        "main": "x_cls_make_yahw_x.py",
+        "anc": []
+      },
+      "x_4357_make_markdown_x": {
+        "main": "x_cls_make_markdown_x.py",
+        "anc": [
+          "dummy/dummy.txt",
+          "dummy/mummy/mummy.txt",
+          "dummy2.txt",
+          "yummy/yummy.txt"
+        ]
+      },
+      "x_4357_make_persistent_env_var_x": {
+        "main": "x_cls_make_persistent_env_var_x.py",
+        "anc": []
+      },
+      "x_4357_make_pypi_x": {
+        "main": "x_cls_make_pypi_x.py",
+        "anc": []
+      },
+      "x_4357_make_github_clones_x": {
+        "main": "x_cls_make_github_clones_x.py",
+        "anc": []
+      },
+      "x_4357_make_pip_updates_x": {
+        "main": "x_cls_make_pip_updates_x.py",
+        "anc": []
+      },
+      "x_4357_make_common_x": {
+        "main": "x_cls_make_common_x.py",
+        "anc": []
+      },
+      "x_4357_make_github_visitor_x": {
+        "main": "x_cls_make_github_visitor_x.py",
+        "anc": []
+      },
+      "x_4357_make_cli_scaffolder_x": {
+        "main": "x_cls_make_cli_scaffolder_x.py",
+        "anc": []
+      },
+      "x_4357_make_contract_validators_x": {
+        "main": "x_cls_make_contract_validators_x.py",
+        "anc": []
+      },
+      "x_4357_make_progress_board_x": {
+        "main": "x_cls_make_progress_board_x.py",
+        "anc": []
+      }
+    }
+  },
+  "execution": {
+    "script_path": "C:\\x_runner_x\\x_make_pip_updates_x\\x_cls_make_pip_updates_x.py",
+    "script_available": true,
+    "script_attempt": {
+      "invoked": true,
+      "return_code": 1
+    },
+    "fallback": {
+      "invoked": true,
+      "pinned": [
+        "x_4357_make_py_mod_sideload_x==0.20.7",
+        "x_4357_make_mermaid_x==0.20.7",
+        "x_4357_make_graphviz_x==0.20.7",
+        "x_4357_make_yahw_x==0.20.7",
+        "x_4357_make_markdown_x==0.20.7",
+        "x_4357_make_persistent_env_var_x==0.20.7",
+        "x_4357_make_pypi_x==0.20.7",
+        "x_4357_make_github_clones_x==0.20.7",
+        "x_4357_make_pip_updates_x==0.20.7",
+        "x_4357_make_common_x==0.20.7",
+        "x_4357_make_github_visitor_x==0.20.7",
+        "x_4357_make_cli_scaffolder_x==0.20.7",
+        "x_4357_make_contract_validators_x==0.20.7",
+        "x_4357_make_progress_board_x==0.20.7"
+      ],
+      "loose": []
+    },
+    "retry": {
+      "mode": "fallback",
+      "return_code": 0,
+      "packages": [
+        "x_4357_make_progress_board_x"
+      ]
+    }
+  },
+  "result": {
+    "status": "attention",
+    "script_return_code": 1,
+    "used_script": true,
+    "fallback_used": true,
+    "retry_return_code": 0,
+    "any_failures": true,
+    "initial_versions": {
+      "x_4357_make_py_mod_sideload_x": "0.20.7",
+      "x_4357_make_mermaid_x": "0.20.7",
+      "x_4357_make_graphviz_x": "0.20.7",
+      "x_4357_make_yahw_x": "0.20.7",
+      "x_4357_make_markdown_x": "0.20.7",
+      "x_4357_make_persistent_env_var_x": "0.20.7",
+      "x_4357_make_pypi_x": "0.20.7",
+      "x_4357_make_github_clones_x": "0.20.7",
+      "x_4357_make_pip_updates_x": "0.20.7",
+      "x_4357_make_common_x": "0.20.7",
+      "x_4357_make_github_visitor_x": "0.20.7",
+      "x_4357_make_cli_scaffolder_x": "0.20.7",
+      "x_4357_make_contract_validators_x": "0.20.7",
+      "x_4357_make_progress_board_x": null
+    },
+    "final_versions": {
+      "x_4357_make_py_mod_sideload_x": "0.20.7",
+      "x_4357_make_mermaid_x": "0.20.7",
+      "x_4357_make_graphviz_x": "0.20.7",
+      "x_4357_make_yahw_x": "0.20.7",
+      "x_4357_make_markdown_x": "0.20.7",
+      "x_4357_make_persistent_env_var_x": "0.20.7",
+      "x_4357_make_pypi_x": "0.20.7",
+      "x_4357_make_github_clones_x": "0.20.7",
+      "x_4357_make_pip_updates_x": "0.20.7",
+      "x_4357_make_common_x": "0.20.7",
+      "x_4357_make_github_visitor_x": "0.20.7",
+      "x_4357_make_cli_scaffolder_x": "0.20.7",
+      "x_4357_make_contract_validators_x": "0.20.7",
+      "x_4357_make_progress_board_x": null
+    },
+    "mismatches": [
+      {
+        "package": "x_4357_make_progress_board_x",
+        "expected": "0.20.7",
+        "observed": null
+      }
+    ],
+    "verification": {
+      "status": "performed",
+      "detail": "metadata validated; deep verification not implemented"
+    }
+  },
+  "status": "success",
+  "completed_at": "2025-11-02T23:06:29Z",
+  "duration_seconds": 101.602,
+  "tool": "x_make_pip_updates_x",
+  "generated_at": "2025-11-02T23:06:29Z"
+}
