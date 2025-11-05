@@ -168,6 +168,13 @@ class PipUpdatesRunner:
         return result.returncode, stdout, stderr
 
     @staticmethod
+    def _run(cmd: Sequence[str]) -> RunResult:
+        completed = run_command(cmd, check=False)
+        stdout = completed.stdout or ""
+        stderr = completed.stderr or ""
+        return completed.returncode, stdout, stderr
+
+    @staticmethod
     def get_installed_version(dist_name: str) -> str | None:
         try:
             res = _version(dist_name)
@@ -188,7 +195,7 @@ class PipUpdatesRunner:
             "--format=json",
             "--disable-pip-version-check",
         ]
-        code, out, err = self._run_and_report(cmd, check=False)
+        code, out, err = self._run(cmd)
         if code != 0:
             _error(f"pip list failed ({code}): {err.strip()}")
             return False
