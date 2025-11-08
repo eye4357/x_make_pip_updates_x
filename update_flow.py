@@ -24,7 +24,6 @@ from x_make_common_x import (
     write_run_report,
 )
 from x_make_common_x.json_contracts import validate_payload
-
 from x_make_pip_updates_x.json_contracts import (
     ERROR_SCHEMA,
     INPUT_SCHEMA,

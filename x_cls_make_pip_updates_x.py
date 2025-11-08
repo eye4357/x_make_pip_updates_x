@@ -14,7 +14,6 @@ from types import MappingProxyType
 from typing import IO, cast
 
 from x_make_common_x import CommandError, run_command
-
 from x_make_pip_updates_x.update_flow import main_json
 
 _LOGGER = logging.getLogger("x_make")
